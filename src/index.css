@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   DESIGN SYSTEM - global navy/yellow tokens (Founders Club identity)
+   ONE source of truth. Values are RGB channels so Tailwind can
+   apply opacity modifiers (e.g. text-muted/60) against them.
+
+     --bg-page          #050D24   page background (navy-deep)
+     --bg-surface       #0A1A3F   cards, dialogs, floating nav (navy)
+     --text-primary     #FDF6E3   headings, titles, primary copy (cream)
+     --text-secondary   #A9B2C7   descriptions, metadata, captions (steel)
+     --border           #12275E   hairlines, dividers, card borders (navy-mid)
+     --accent           #FFCC1D   sparse yellow highlight (2–3 per section)
+     --accent-secondary #7A94B8   cool steel-blue supporting tone
+     --accent-ink       #050D24   dark navy text ON the yellow accent
+
+   The Musical / tabla section keeps a warm (amber/sand) exception via
+   literal hex - see MusicalJourney.tsx.
+   ============================================================ */
+:root {
+  --bg-page: 5 13 36;
+  --bg-surface: 10 26 63;
+  --text-primary: 253 246 227;
+  --text-secondary: 169 178 199;
+  --border: 18 39 94;
+  --accent: 255 204 29;
+  --accent-soft: 255 217 74;
+  --accent-secondary: 122 148 184;
+  --accent-ink: 5 13 36;
+  color-scheme: dark;
+}
+
+* {
+  border-color: rgb(var(--border));
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+body {
+  margin: 0;
+  background: rgb(var(--bg-page));
+  color: rgb(var(--text-primary));
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  overflow-x: hidden;
+  font-feature-settings: "ss01", "cv01";
+}
+
+::selection {
+  background: rgb(var(--accent));
+  color: rgb(var(--accent-ink));
+}
+
+/* Custom minimal scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgb(var(--bg-page));
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 999px;
+  border: 3px solid rgb(var(--bg-page));
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--bg-surface));
+}
+
+/* Focus visibility for accessibility */
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ============================================================
+   COMPONENT UTILITIES
+   ============================================================ */
+@layer components {
+  /* Editorial oversized display type */
+  .text-display {
+    font-family: "Space Grotesk", sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.05em;
+    line-height: 0.92;
+  }
+
+  /* Warm elevated surface used by the floating navbar & cards */
+  .glass {
+    background: rgb(var(--bg-surface) / 0.82);
+    backdrop-filter: blur(18px) saturate(120%);
+    -webkit-backdrop-filter: blur(18px) saturate(120%);
+    border: 1px solid rgb(var(--border));
+  }
+
+  /* Editorial eyebrow - sentence case, restrained tracking (no shouty caps) */
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    color: rgb(var(--text-secondary));
+  }
+
+  /* Code token colors (used by CodeReveal) - warm system tones */
+  .tok-str {
+    color: rgb(var(--accent));
+  }
+  .tok-key {
+    color: rgb(var(--accent-secondary));
+  }
+  .tok-prop {
+    color: rgb(var(--text-primary));
+  }
+
+  /* Grain overlay for cinematic texture */
+  .grain::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+@layer utilities {
+  .mask-fade-y {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      #000 12%,
+      #000 88%,
+      transparent
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      #000 12%,
+      #000 88%,
+      transparent
+    );
+  }
+  .mask-fade-x {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 8%,
+      #000 92%,
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 8%,
+      #000 92%,
+      transparent
+    );
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* ============================================================
+   FOUNDERS THEME - scoped. Only applied on /founders via a
+   wrapper element carrying `.theme-founders`.
+   ============================================================ */
+.theme-founders {
+  --f-navy: #0a1a3f;
+  --f-navy-deep: #050d24;
+  --f-yellow: #ffcc1d;
+  background: var(--f-navy-deep);
+  color: #fdf6e3;
+}
