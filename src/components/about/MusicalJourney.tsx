@@ -1,10 +1,70 @@
-import { useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { Play } from "lucide-react";
 import { music } from "@/data/education";
 import { media } from "@/data/media";
 import { SmartImage } from "@/components/shared/SmartImage";
 import { CinematicVideo } from "@/components/shared/CinematicVideo";
 import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
+
+/**
+ * Shared single-channel tabla audio. Caches one HTMLAudioElement per source
+ * (so hovering never spawns duplicates), only ever plays one at a time, stops
+ * and resets the previous sound when switching, and cleans everything up on
+ * unmount. Missing files fail silently (play() promise rejection is swallowed).
+ */
+function useTablaAudio() {
+  const cache = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const current = useRef<HTMLAudioElement | null>(null);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+
+  const stop = useCallback(() => {
+    const a = current.current;
+    if (a) {
+      a.pause();
+      a.currentTime = 0;
+    }
+    current.current = null;
+    setActiveKey(null);
+  }, []);
+
+  const play = useCallback(
+    (key: string, src: string) => {
+      // stop whatever is playing first (no overlapping audio)
+      const prev = current.current;
+      if (prev) {
+        prev.pause();
+        prev.currentTime = 0;
+      }
+      let a = cache.current.get(src);
+      if (!a) {
+        a = new Audio(src);
+        a.preload = "auto";
+        cache.current.set(src, a);
+      }
+      a.onended = () => setActiveKey((k) => (k === key ? null : k));
+      current.current = a;
+      setActiveKey(key);
+      a.currentTime = 0;
+      void a.play().catch(() => {
+        // asset not present yet, or blocked, fail gracefully
+        setActiveKey((k) => (k === key ? null : k));
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const cached = cache.current;
+    return () => {
+      cached.forEach((a) => a.pause());
+      cached.clear();
+      current.current = null;
+    };
+  }, []);
+
+  return { activeKey, play, stop };
+}
 
 // Teental, the 16-beat classical cycle. Vibhags (measures) of 4.
 const TEENTAL = [
@@ -58,17 +118,36 @@ function TablaMandala() {
   );
 }
 
-/** The 16-beat cycle, lit in sequence like a metronome of taal. */
-function TaalCycle() {
+/** The 16-beat cycle, lit in sequence like a metronome of taal. Each circular
+ *  tile is also an audio button: hover (desktop) or tap plays its bol's sound. */
+function TaalCycle({
+  activeKey,
+  onPlay,
+  onStop,
+}: {
+  activeKey: string | null;
+  onPlay: (key: string, src: string) => void;
+  onStop: () => void;
+}) {
   const reduced = usePrefersReducedMotion();
   return (
-    <div className="grid grid-cols-4 gap-2 sm:gap-3">
+    <div
+      className="grid grid-cols-4 gap-2 sm:gap-3"
+      onMouseLeave={onStop}
+    >
       {TEENTAL.map((bol, i) => {
         const sam = i === 0; // the emphatic first beat
         const khali = i === 8; // the "empty" beat
+        const key = `bol-${i}`;
+        const playing = activeKey === key;
+        const src = media.tablaSounds[bol];
         return (
-          <motion.div
+          <motion.button
             key={i}
+            type="button"
+            aria-label={`Play ${bol}`}
+            onMouseEnter={() => onPlay(key, src)}
+            onClick={() => onPlay(key, src)}
             initial={reduced ? false : { opacity: 0.35 }}
             animate={
               reduced
@@ -82,17 +161,19 @@ function TaalCycle() {
               delay: i * 0.28,
               ease: "easeInOut",
             }}
-            className={`flex aspect-square flex-col items-center justify-center rounded-full border text-center ${
-              sam
-                ? "border-[#D68A4C]/60 bg-[#D68A4C]/10"
-                : khali
-                  ? "border-[#3A332C] bg-transparent"
-                  : "border-[#3A332C] bg-content/[0.03]"
+            className={`flex aspect-square cursor-pointer flex-col items-center justify-center rounded-full border text-center outline-none transition-colors ${
+              playing
+                ? "border-[#D68A4C] bg-[#D68A4C]/25 shadow-[0_0_20px_rgba(214,138,76,0.45)]"
+                : sam
+                  ? "border-[#D68A4C]/60 bg-[#D68A4C]/10"
+                  : khali
+                    ? "border-[#3A332C] bg-transparent"
+                    : "border-[#3A332C] bg-content/[0.03]"
             }`}
           >
             <span className="font-serif text-sm text-content sm:text-base">{bol}</span>
             <span className="font-mono text-[0.5rem] text-[#9C9186]">{i + 1}</span>
-          </motion.div>
+          </motion.button>
         );
       })}
     </div>
@@ -107,6 +188,9 @@ export function MusicalJourney() {
   });
   const spin = useTransform(scrollYProgress, [0, 1], [0, 90]);
   const videoOpacity = useTransform(scrollYProgress, [0.4, 0.75], [0, 0.5]);
+
+  const { activeKey, play, stop } = useTablaAudio();
+  const teentaalPlaying = activeKey === "teentaal";
 
   return (
     <section
@@ -177,7 +261,24 @@ export function MusicalJourney() {
             <p className="mb-4 font-mono text-[0.65rem] tracking-[0.08em] text-[#9C9186]">
               Teental · 16 beats
             </p>
-            <TaalCycle />
+            <TaalCycle activeKey={activeKey} onPlay={play} onStop={stop} />
+
+            <button
+              type="button"
+              onClick={() =>
+                teentaalPlaying
+                  ? stop()
+                  : play("teentaal", media.teentaalFull)
+              }
+              className={`mt-6 inline-flex items-center gap-2.5 rounded-full border px-6 py-3 text-sm font-medium transition-colors ${
+                teentaalPlaying
+                  ? "border-[#D68A4C] bg-[#D68A4C]/20 text-content shadow-[0_0_20px_rgba(214,138,76,0.4)]"
+                  : "border-[#D68A4C]/50 bg-[#D68A4C]/10 text-[#E8D8C4] hover:bg-[#D68A4C]/20"
+              }`}
+            >
+              <Play className="h-4 w-4" />
+              {teentaalPlaying ? "Playing Teentaal…" : "Click for Full Teentaal"}
+            </button>
           </div>
         </div>
       </div>

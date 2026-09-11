@@ -41,6 +41,17 @@ export const media = {
   tablaVideo: "/assets/videos/tabla-video-placeholder.mp4",
   tablaPoster: "/assets/images/tabla.jpg",
 
+  // Tabla bol sounds for the interactive taal tiles + the full Teentaal cycle.
+  // Drop the real audio files at these exact paths (public/assets/audio/…);
+  // playback degrades gracefully (silent) until the files are present.
+  tablaSounds: {
+    Dha: "/assets/audio/dha.mp3",
+    Dhin: "/assets/audio/dhin.mp3",
+    Ta: "/assets/audio/ta.mp3",
+    Tin: "/assets/audio/tin.mp3",
+  } as Record<string, string>,
+  teentaalFull: "/assets/audio/teentaal.mp3",
+
   // Shared fallbacks.
   eventPlaceholder: "/assets/images/event-placeholder.jpg",
   galleryPlaceholder: "/assets/images/gallery-placeholder.jpg",

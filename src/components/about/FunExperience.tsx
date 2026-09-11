@@ -224,11 +224,11 @@ function FunVideo() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.98 }}
+      initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0 }}
+      exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute inset-0"
+      className="relative aspect-video max-h-[82vh] w-[92vw] max-w-6xl overflow-hidden rounded-2xl border border-line shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
     >
       <video
         ref={ref}
@@ -238,10 +238,10 @@ function FunVideo() {
         loop
         playsInline
       />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-page/60 via-transparent to-page/30" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-page/50 via-transparent to-page/20" />
 
       {/* top-right controls: mute + pause/play */}
-      <div className="absolute right-5 top-5 z-20 flex items-center gap-2">
+      <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
         <button
           type="button"
           onClick={togglePlay}

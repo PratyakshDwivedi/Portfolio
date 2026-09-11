@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowUpRight, Sparkles } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { PageTransition } from "@/components/shared/PageTransition";
 import { AboutHero } from "@/components/about/AboutHero";
 import { EducationTimeline } from "@/components/about/EducationTimeline";
@@ -115,7 +115,6 @@ export default function About() {
           transition={{ duration: 0.6 }}
           className="inline-flex items-center gap-3 rounded-full bg-accent px-9 py-4 text-base font-semibold text-accent-ink shadow-[0_16px_40px_rgba(0,0,0,0.35)] transition hover:bg-accent-soft"
         >
-          <Sparkles className="h-5 w-5" />
           Click for Fun
         </motion.button>
       </section>
