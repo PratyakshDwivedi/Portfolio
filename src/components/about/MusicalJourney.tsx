@@ -111,7 +111,8 @@ export function MusicalJourney() {
   return (
     <section
       ref={ref}
-      className="relative overflow-hidden py-32"
+      id="sadhana"
+      className="relative scroll-mt-0 overflow-hidden py-32"
       style={{
         background:
           "radial-gradient(120% 90% at 50% 0%, #2A231C 0%, #221D18 45%, #1B1815 100%)",

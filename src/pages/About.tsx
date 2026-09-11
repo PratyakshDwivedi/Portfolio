@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { PageTransition } from "@/components/shared/PageTransition";
 import { AboutHero } from "@/components/about/AboutHero";
@@ -18,6 +19,26 @@ export default function About() {
     offset: ["start start", "end end"],
   });
   const videoOpacity = useTransform(scrollYProgress, [0, 0.82, 1], [1, 1, 0]);
+
+  // When the Music card deep-links here (/about#sadhana), jump straight to the
+  // Sadhana / Tabla section instead of the top of the page. A double rAF lets
+  // the lazy-loaded layout settle before we measure the target's position.
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash !== "#sadhana") return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        document
+          .getElementById("sadhana")
+          ?.scrollIntoView({ behavior: "auto", block: "start" });
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [hash]);
 
   return (
     <PageTransition>

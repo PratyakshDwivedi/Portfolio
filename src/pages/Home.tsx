@@ -50,10 +50,6 @@ export default function Home() {
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.7 }}
           >
-            <p className="eyebrow mb-5">Say hi</p>
-            <h2 className="text-display mb-5 text-balance text-4xl leading-[1.05] sm:text-5xl">
-              Nice to meet you.
-            </h2>
             <p className="max-w-md text-base leading-relaxed text-muted">
               I like building things that feel considered, in code, in
               community, and in rhythm. Move your cursor across the portrait.

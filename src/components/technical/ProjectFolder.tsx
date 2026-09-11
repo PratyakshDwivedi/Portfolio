@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   FolderClosed,
   FolderOpen,
+  X,
 } from "lucide-react";
 import type { Project } from "@/data/projects";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,7 @@ const POSE = [-3, -1, 1, 3];
 export function ProjectFolder({ project, index }: { project: Project; index: number }) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<Exclude<FileKey, "github"> | null>(null);
+  const [hover, setHover] = useState<number | null>(null);
   const reduced = usePrefersReducedMotion();
 
   const tags = project.stack.slice(0, 3);
@@ -55,18 +57,34 @@ export function ProjectFolder({ project, index }: { project: Project; index: num
     pipeline: "Pipeline visualization coming soon.",
   };
 
-  // Lock scroll + Escape-to-close while the file view is open.
+  const closeAll = () => {
+    setOpen(false);
+    setFile(null);
+    setHover(null);
+  };
+
+  // Lock body scroll while the folder view is open.
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
   }, [open]);
+
+  // Escape steps back one level: a focused file modal closes first, then the
+  // folder itself, so the Technical section is never reset in one jump.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (file) setFile(null);
+      else setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, file]);
 
   return (
     <>
@@ -130,28 +148,25 @@ export function ProjectFolder({ project, index }: { project: Project; index: num
         </button>
       </motion.div>
 
-      {/* ---------- OPEN: full-screen file view (portal) ---------- */}
+      {/* ---------- OPEN: file view (portal) ---------- */}
       {createPortal(
         <AnimatePresence>
           {open && (
             <motion.div
+              key="folder-overlay"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.35 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="fixed inset-0 z-[80] flex flex-col items-center justify-center overflow-y-auto bg-page/75 px-6 py-20 backdrop-blur-md"
-              onClick={() => {
-                setOpen(false);
-                setFile(null);
-              }}
+              onClick={closeAll}
             >
               {/* Back control (left) */}
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setOpen(false);
-                  setFile(null);
+                  closeAll();
                 }}
                 className="fixed left-5 top-6 z-10 flex items-center gap-2 rounded-full border border-line bg-surface/80 px-4 py-2 text-sm font-medium text-content transition hover:border-accent/50 hover:text-accent"
               >
@@ -159,9 +174,17 @@ export function ProjectFolder({ project, index }: { project: Project; index: num
                 Back to projects
               </button>
 
-              {/* content (clicks inside do not close) */}
-              <div
-                className="relative w-full max-w-5xl"
+              {/* level 1: the popped-out files. Dims + blurs while a file modal
+                  is focused so attention stays on the open card. */}
+              <motion.div
+                initial={{ opacity: 0, y: 24, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.98 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                className={cn(
+                  "relative w-full max-w-5xl transition-[filter,opacity,transform] duration-300",
+                  file && "pointer-events-none scale-[0.98] opacity-40 blur-sm",
+                )}
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="mb-10 text-center">
@@ -169,18 +192,22 @@ export function ProjectFolder({ project, index }: { project: Project; index: num
                   <h3 className="text-display text-3xl text-content sm:text-4xl">
                     Explore the project.
                   </h3>
+                  <p className="mt-2 font-mono text-[0.65rem] uppercase tracking-widest text-muted/60">
+                    Hover a card, click to open
+                  </p>
                 </div>
 
                 {/* the four popped-out colorful files */}
-                <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
+                <div
+                  className="flex flex-wrap justify-center gap-4 sm:gap-6"
+                  onMouseLeave={() => setHover(null)}
+                >
                   {FILES.map((f, i) => {
                     const Icon = f.icon;
-                    const common =
-                      "relative flex w-[42vw] max-w-[260px] flex-col justify-between rounded-2xl border p-5 text-left shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-transform duration-200 hover:-translate-y-1.5 sm:w-56 sm:p-6";
-                    const style = {
-                      backgroundColor: `${f.color}1f`,
-                      borderColor: `${f.color}66`,
-                    };
+                    const emphasized = hover === i;
+                    const dimmed = hover !== null && hover !== i;
+                    // Entrance pop-out (spring from the folder); hover feedback
+                    // is CSS on the inner element so it never fights the spring.
                     const anim = {
                       initial: {
                         opacity: 0,
@@ -189,9 +216,23 @@ export function ProjectFolder({ project, index }: { project: Project; index: num
                         rotate: reduced ? 0 : POSE[i] * 3,
                       },
                       animate: { opacity: 1, y: 0, scale: 1, rotate: reduced ? 0 : POSE[i] },
-                      transition: { delay: 0.05 * i, type: "spring" as const, stiffness: 230, damping: 20 },
+                      transition: {
+                        delay: 0.06 * i,
+                        type: "spring" as const,
+                        stiffness: 260,
+                        damping: 22,
+                      },
                     };
-                    const inner = (
+                    const inner = cn(
+                      "relative flex h-[180px] w-[42vw] max-w-[260px] flex-col justify-between rounded-2xl border p-5 text-left shadow-[0_20px_50px_rgba(0,0,0,0.5)] outline-none transition-all duration-300 will-change-transform sm:h-[200px] sm:w-56 sm:p-6",
+                      emphasized && "-translate-y-2 scale-[1.05] shadow-[0_30px_70px_rgba(0,0,0,0.6)]",
+                      dimmed && "scale-[0.97] opacity-45 blur-[2px]",
+                    );
+                    const style = {
+                      backgroundColor: `${f.color}1f`,
+                      borderColor: emphasized ? f.color : `${f.color}66`,
+                    };
+                    const body = (
                       <>
                         <div
                           className="mb-8 flex h-11 w-11 items-center justify-center rounded-xl"
@@ -221,11 +262,13 @@ export function ProjectFolder({ project, index }: { project: Project; index: num
                           target="_blank"
                           rel="noopener noreferrer"
                           {...anim}
+                          onMouseEnter={() => setHover(i)}
+                          onFocus={() => setHover(i)}
                           style={style}
-                          className={cn(common, "h-[180px] sm:h-[200px]")}
+                          className={inner}
                           aria-label={`Open ${project.shortTitle} on GitHub (external)`}
                         >
-                          {inner}
+                          {body}
                           <ArrowUpRight
                             className="absolute right-4 top-4 h-4 w-4"
                             style={{ color: f.color }}
@@ -233,75 +276,118 @@ export function ProjectFolder({ project, index }: { project: Project; index: num
                         </motion.a>
                       );
                     }
-                    const active = file === f.key;
                     return (
                       <motion.button
                         key={f.key}
                         type="button"
-                        onClick={() => setFile(active ? null : (f.key as Exclude<FileKey, "github">))}
-                        aria-expanded={active}
+                        onClick={() => setFile(f.key as Exclude<FileKey, "github">)}
+                        onMouseEnter={() => setHover(i)}
+                        onFocus={() => setHover(i)}
                         {...anim}
-                        style={{
-                          ...style,
-                          ...(active ? { borderColor: f.color } : {}),
-                        }}
-                        className={cn(common, "h-[180px] sm:h-[200px]")}
+                        style={style}
+                        className={inner}
                       >
-                        {inner}
+                        {body}
                       </motion.button>
                     );
                   })}
                 </div>
+              </motion.div>
 
-                {/* selected file content */}
-                <AnimatePresence initial={false}>
-                  {file && (
+              {/* level 2: the selected file as a large focused modal over a
+                  blurred/dimmed backdrop. Closing returns to the folder view. */}
+              <AnimatePresence>
+                {file && (
+                  <motion.div
+                    key="file-modal"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="fixed inset-0 z-[90] flex items-center justify-center p-4 sm:p-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFile(null);
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-page/70 backdrop-blur-lg" />
                     <motion.div
-                      key={file}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 16 }}
-                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                      className="mx-auto mt-8 max-h-[52vh] max-w-2xl overflow-y-auto rounded-2xl border border-line bg-surface/95 p-6"
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label={FILES.find((f) => f.key === file)?.label}
+                      initial={{ opacity: 0, scale: 0.94, y: 24 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.96, y: 16 }}
+                      transition={{ type: "spring", stiffness: 260, damping: 26 }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="relative z-10 flex h-[86vh] w-[94vw] max-w-5xl flex-col overflow-hidden rounded-2xl border bg-surface shadow-[0_40px_120px_rgba(0,0,0,0.6)]"
+                      style={{
+                        borderColor: `${FILES.find((f) => f.key === file)?.color}66`,
+                      }}
                     >
-                      <p className="mb-3 font-mono text-[0.65rem] uppercase tracking-widest text-accent">
-                        {FILES.find((f) => f.key === file)?.label}
-                      </p>
-                      {file === "pipeline" ? (
-                        project.pipelineImage ? (
-                          <img
-                            src={project.pipelineImage}
-                            alt={`${project.shortTitle} pipeline`}
-                            className="w-full rounded-lg border border-line object-contain"
-                          />
-                        ) : (
-                          <p className="text-sm leading-relaxed text-muted">
-                            {panelText.pipeline}
+                      {/* header */}
+                      <div className="flex shrink-0 items-center justify-between border-b border-line px-6 py-4 sm:px-8">
+                        <div>
+                          <p
+                            className="font-mono text-[0.6rem] uppercase tracking-widest"
+                            style={{ color: FILES.find((f) => f.key === file)?.color }}
+                          >
+                            {project.shortTitle}
                           </p>
-                        )
-                      ) : (file === "reason" ? project.reason : project.impact)?.length ? (
-                        <ul className="space-y-3">
-                          {(file === "reason" ? project.reason : project.impact)!.map(
-                            (point, k) => (
-                              <li
-                                key={k}
-                                className="flex gap-3 text-sm leading-relaxed text-muted"
-                              >
-                                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                                <span>{point}</span>
-                              </li>
-                            ),
-                          )}
-                        </ul>
-                      ) : (
-                        <p className="text-sm leading-relaxed text-muted">
-                          {panelText[file]}
-                        </p>
-                      )}
+                          <h4 className="text-display text-xl leading-tight text-content sm:text-2xl">
+                            {FILES.find((f) => f.key === file)?.label}
+                          </h4>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setFile(null)}
+                          aria-label="Close file"
+                          className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-page/60 text-content transition hover:border-accent/50 hover:text-accent"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
+
+                      {/* content, maximizing usable space */}
+                      <div className="flex-1 overflow-y-auto p-6 sm:p-10">
+                        {file === "pipeline" ? (
+                          project.pipelineImage ? (
+                            <div className="flex h-full items-center justify-center">
+                              <img
+                                src={project.pipelineImage}
+                                alt={`${project.shortTitle} pipeline`}
+                                className="mx-auto max-h-full w-auto max-w-full rounded-lg border border-line object-contain"
+                              />
+                            </div>
+                          ) : (
+                            <p className="text-base leading-relaxed text-muted">
+                              {panelText.pipeline}
+                            </p>
+                          )
+                        ) : (file === "reason" ? project.reason : project.impact)?.length ? (
+                          <ul className="mx-auto max-w-2xl space-y-5">
+                            {(file === "reason" ? project.reason : project.impact)!.map(
+                              (point, k) => (
+                                <li
+                                  key={k}
+                                  className="flex gap-3.5 text-base leading-relaxed text-content/85"
+                                >
+                                  <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                                  <span>{point}</span>
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        ) : (
+                          <p className="text-base leading-relaxed text-muted">
+                            {panelText[file]}
+                          </p>
+                        )}
+                      </div>
                     </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
         </AnimatePresence>,

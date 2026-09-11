@@ -3,7 +3,6 @@ import { FoundersHero } from "@/components/founders/FoundersHero";
 import { LeadershipIntro } from "@/components/founders/LeadershipIntro";
 import { EventCarousel } from "@/components/founders/EventCarousel";
 import { InfiniteFounderGallery } from "@/components/founders/InfiniteFounderGallery";
-import { Testimonials } from "@/components/founders/Testimonials";
 
 /**
  * Founders page, the ONLY page carrying the navy+yellow Founders Club identity.
@@ -27,7 +26,6 @@ export default function Founders() {
           <LeadershipIntro />
           <EventCarousel />
           <InfiniteFounderGallery />
-          <Testimonials />
         </div>
       </div>
     </PageTransition>

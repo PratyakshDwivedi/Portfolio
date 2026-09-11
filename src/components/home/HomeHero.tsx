@@ -7,25 +7,19 @@ import { profile } from "@/data/profile";
 
 type Phase = "writing" | "reveal";
 
-const INTRO_KEY = "pd_intro_done";
 const nameWords = profile.name.split(" ");
 // Home intro no longer surfaces "Tabla" beneath the name (Music stays its own
 // identity card + the About tabla section). Keep the other identities.
 const introIdentities = profile.identities.filter((id) => id.key !== "music");
 
-const introSeen = () => {
-  try {
-    return sessionStorage.getItem(INTRO_KEY) === "1";
-  } catch {
-    return false;
-  }
-};
+// Module-level (in-memory) flag: the PD intro plays once per *full page load*.
+// A genuine browser refresh reloads this module and resets the flag, so the
+// intro replays; client-side navigation back to Home keeps the module alive,
+// so the flag stays set and the intro does NOT replay.
+let introPlayed = false;
+const introSeen = () => introPlayed;
 const markIntroSeen = () => {
-  try {
-    sessionStorage.setItem(INTRO_KEY, "1");
-  } catch {
-    /* ignore */
-  }
+  introPlayed = true;
 };
 
 // Parent/child variants for the name reveal.
@@ -39,11 +33,36 @@ const charChild: Variants = {
 };
 
 export function HomeHero() {
-  // The PD writing intro plays only on the first visit of a browser session;
-  // navigating back to Home later in the session does not replay it.
+  // The PD writing intro plays on a fresh page load; navigating back to Home
+  // later (client-side) does not replay it.
   const [skipIntro] = useState(introSeen);
   const [phase, setPhase] = useState<Phase>(skipIntro ? "reveal" : "writing");
   const [showExtras, setShowExtras] = useState(skipIntro);
+  // Gate the intro on genuine initial load, so the startup skeleton hands off
+  // directly to the writing animation instead of it running behind the loader.
+  const [ready, setReady] = useState(
+    () => skipIntro || document.readyState === "complete",
+  );
+
+  useEffect(() => {
+    if (ready) return;
+    if (document.readyState === "complete") {
+      setReady(true);
+      return;
+    }
+    const onLoad = () => setReady(true);
+    window.addEventListener("load", onLoad, { once: true });
+    return () => window.removeEventListener("load", onLoad);
+  }, [ready]);
+
+  // Mark the intro as spent for this page-load as soon as it is going to play
+  // (not when it finishes). This guarantees exactly one intro per full load: a
+  // real refresh resets the module flag and replays it, while client-side
+  // navigation back to Home — even immediately, before the animation ends —
+  // never replays it. `skipIntro` was captured before this runs.
+  useEffect(() => {
+    if (!skipIntro) markIntroSeen();
+  }, [skipIntro]);
 
   const handleWritten = () => {
     setTimeout(() => setPhase("reveal"), 450);
@@ -55,14 +74,14 @@ export function HomeHero() {
 
   // Safety net: if the writing callback is ever missed, still reveal.
   useEffect(() => {
-    if (skipIntro) return;
+    if (skipIntro || !ready) return;
     const t = setTimeout(() => {
       setPhase((p) => (p === "writing" ? "reveal" : p));
       setShowExtras(true);
       markIntroSeen();
     }, 4200);
     return () => clearTimeout(t);
-  }, [skipIntro]);
+  }, [skipIntro, ready]);
 
   return (
     <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-6">
@@ -71,9 +90,9 @@ export function HomeHero() {
         <div className="absolute left-1/2 top-1/2 h-[60vmin] w-[60vmin] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/[0.07] blur-[140px]" />
       </div>
 
-      {/* Stage: PD handwriting (first session load only) */}
+      {/* Stage: PD handwriting (first load only, begins once assets are ready) */}
       <AnimatePresence>
-        {phase === "writing" && (
+        {phase === "writing" && ready && (
           <motion.div
             key="writing"
             exit={{ opacity: 0, scale: 0.9, filter: "blur(8px)" }}

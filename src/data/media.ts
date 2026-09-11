@@ -26,8 +26,9 @@ export const media = {
   tablaCard: "/assets/images/tablacard.jpg",
 
   // About-page cinematic background video (REAL, plays across the
-  // pre-tabla About experience).
-  aboutBackgroundVideo: "/assets/videos/about-background.mp4",
+  // pre-tabla About experience). Swapped to the "About Me New" asset;
+  // all playback/scroll/audio-fade behavior is unchanged (see CinematicVideo).
+  aboutBackgroundVideo: "/assets/videos/about-me-new.mp4",
   aboutBackgroundPoster: "/assets/images/about-poster-placeholder.jpg",
 
   // Musical section, tabla. Photo is REAL; the featured tabla VIDEO

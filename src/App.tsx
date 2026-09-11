@@ -10,6 +10,7 @@ const Home = lazy(() => import("./pages/Home"));
 const About = lazy(() => import("./pages/About"));
 const Technical = lazy(() => import("./pages/Technical"));
 const Founders = lazy(() => import("./pages/Founders"));
+const Testimonials = lazy(() => import("./pages/Testimonials"));
 const Connect = lazy(() => import("./pages/Connect"));
 
 // Route prefetch helpers , call on nav hover/focus so the chunk (and, for
@@ -31,15 +32,20 @@ export const prefetchRoute: Record<string, () => void> = {
   "/about": prefetchAbout,
   "/technical": () => void import("./pages/Technical"),
   "/founders": () => void import("./pages/Founders"),
+  "/testimonials": () => void import("./pages/Testimonials"),
   "/connect": () => void import("./pages/Connect"),
 };
 
-/** Scroll to top on every route change. */
+/**
+ * Scroll to top on route change, EXCEPT when navigating to an in-page anchor
+ * (e.g. /about#sadhana) — those targets handle their own scroll on the page.
+ */
 function ScrollToTop() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   useEffect(() => {
+    if (hash) return;
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-  }, [pathname]);
+  }, [pathname, hash]);
   return null;
 }
 
@@ -66,6 +72,7 @@ export default function App() {
             <Route path="/about" element={<About />} />
             <Route path="/technical" element={<Technical />} />
             <Route path="/founders" element={<Founders />} />
+            <Route path="/testimonials" element={<Testimonials />} />
             <Route path="/connect" element={<Connect />} />
             <Route path="*" element={<Home />} />
           </Routes>

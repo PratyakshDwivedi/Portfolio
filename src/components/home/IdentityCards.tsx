@@ -34,7 +34,9 @@ const identities: Identity[] = [
     bg: "/assets/images/events/foundathon-3/thumbnail.jpg",
   },
   {
-    to: "/about",
+    // Deep-link straight to the Sadhana / Tabla section inside About Me,
+    // not the top of the page.
+    to: "/about#sadhana",
     label: "Music",
     hook: "Logic by day, rhythm by heart.",
     back: "A trained classical tabla player. Discipline you can hear.",
@@ -89,11 +91,11 @@ export function IdentityCards() {
             aria-label={`${id.label}: ${id.hook}`}
             onMouseEnter={() => {
               setActiveIdx(i);
-              prefetchRoute[id.to]?.();
+              prefetchRoute[id.to.split("#")[0]]?.();
             }}
             onFocus={() => {
               setActiveIdx(i);
-              prefetchRoute[id.to]?.();
+              prefetchRoute[id.to.split("#")[0]]?.();
             }}
             onBlur={() => setActiveIdx(null)}
             className={cn(

@@ -1,39 +1,40 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const BOOT_KEY = "pd_booted";
 const BARS = 7;
 
 /**
- * Startup skeleton loader (adapted from the Uiverse "tall fish" concept:
- * a row of tall bars pulsing at staggered heights). Shows ONCE per browser
- * session on first load, then fades out. Navigation between sections never
- * replays it. Respects prefers-reduced-motion.
+ * Startup skeleton loader (a row of tall bars pulsing at staggered heights).
+ *
+ * It is shown ONLY while the browser is genuinely still loading initial
+ * resources — its lifetime is bound to the real `window` load event, not an
+ * arbitrary timer. Once the page has finished loading it hides, handing off
+ * directly to the Home PD intro animation.
+ *
+ * Because this component mounts once at the app root and never unmounts,
+ * client-side navigation between sections never re-shows it. On a genuine
+ * page refresh the document reloads, so it briefly appears again only if
+ * resources actually need fetching (cached loads resolve instantly with no
+ * flash, since `document.readyState` is already "complete").
  */
 export function StartupLoader() {
-  // Only boot on the very first load of the session.
   const [show, setShow] = useState(() => {
     try {
-      return sessionStorage.getItem(BOOT_KEY) !== "1";
+      return document.readyState !== "complete";
     } catch {
-      return true;
+      return false;
     }
   });
 
   useEffect(() => {
     if (!show) return;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const done = () => {
-      try {
-        sessionStorage.setItem(BOOT_KEY, "1");
-      } catch {
-        /* ignore */
-      }
+    if (document.readyState === "complete") {
       setShow(false);
-    };
-    // Short, sensible duration; leave slightly longer if the page is still busy.
-    const t = setTimeout(done, reduced ? 350 : 1500);
-    return () => clearTimeout(t);
+      return;
+    }
+    const done = () => setShow(false);
+    window.addEventListener("load", done, { once: true });
+    return () => window.removeEventListener("load", done);
   }, [show]);
 
   return (

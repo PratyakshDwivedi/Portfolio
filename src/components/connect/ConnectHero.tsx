@@ -48,10 +48,13 @@ export function ConnectHero() {
         <div className="pointer-events-none absolute inset-0 [clip-path:ellipse(48%_50%_at_50%_50%)] bg-gradient-to-t from-page/70 via-transparent to-transparent" />
       </motion.div>
 
-      {/* front layer, name overlapping the image */}
+      {/* front layer, name overlapping the image. Positioned near vertical
+          centre (via `top`, not a transform — Framer's inline `y` owns the
+          transform) so the hero content sits where the other pages' heroes do,
+          instead of leaving a large empty band at the top of the page. */}
       <motion.div
         style={{ y: frontWordY }}
-        className="pointer-events-none absolute inset-x-0 bottom-[14%] z-10 text-center"
+        className="pointer-events-none absolute inset-x-0 top-[40%] z-10 text-center"
       >
         <p className="eyebrow mb-4">Connect with me</p>
         <h2 className="text-display text-[13vw] leading-[0.85] sm:text-[8rem]">

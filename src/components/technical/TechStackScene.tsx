@@ -35,9 +35,12 @@ function FloatingLabel({
   progress: MotionValue<number>;
   reduced: boolean;
 }) {
-  // Gentle scroll parallax + fade as the opening screen scrolls away.
-  const y = useTransform(progress, [0, 0.3], [0, label.depth * -70]);
-  const opacity = useTransform(progress, [0, 0.12, 0.28], [0, 1, 0]);
+  // Gentle scroll parallax + fade. `progress` tracks the opening screen's own
+  // scroll (0 = filling the viewport, 1 = fully scrolled away), so the tokens
+  // stay visible for essentially the whole time the hero photo is on screen and
+  // only fade as it leaves, rather than disappearing prematurely.
+  const y = useTransform(progress, [0, 1], [0, label.depth * -70]);
+  const opacity = useTransform(progress, [0, 0.1, 0.72, 0.95], [0, 1, 1, 0]);
   return (
     <motion.div
       style={{
@@ -65,17 +68,25 @@ function FloatingLabel({
  */
 export function TechStackScene({ children }: { children?: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
+  const openingRef = useRef<HTMLDivElement>(null);
   const reduced = usePrefersReducedMotion();
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end end"],
   });
+  // Separate tracker for JUST the opening screen, so the tech chips + heading
+  // time against the hero's own scroll (independent of how tall the project
+  // list below happens to be).
+  const { scrollYProgress: openingProgress } = useScroll({
+    target: openingRef,
+    offset: ["start start", "end start"],
+  });
 
-  const blurPx = useTransform(scrollYProgress, [0.04, 0.35], [0, 14]);
+  const blurPx = useTransform(scrollYProgress, [0.05, 0.4], [0, 14]);
   const filter = useMotionTemplate`blur(${blurPx}px)`;
-  const imgOpacity = useTransform(scrollYProgress, [0, 0.35, 1], [0.9, 0.5, 0.38]);
+  const imgOpacity = useTransform(scrollYProgress, [0, 0.4, 1], [0.9, 0.5, 0.38]);
   const imgScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
-  const headingOpacity = useTransform(scrollYProgress, [0, 0.18], [1, 0]);
+  const headingOpacity = useTransform(openingProgress, [0, 0.45], [1, 0]);
 
   return (
     <section ref={ref} className="relative">
@@ -104,13 +115,16 @@ export function TechStackScene({ children }: { children?: ReactNode }) {
       {/* foreground content, above the persistent background */}
       <div className="relative z-10">
         {/* opening screen: large title + floating tech chips */}
-        <div className="relative flex h-[100svh] items-center justify-center overflow-hidden">
+        <div
+          ref={openingRef}
+          className="relative flex h-[100svh] items-center justify-center overflow-hidden"
+        >
           <div className="absolute inset-0">
             {LABELS.map((l) => (
               <FloatingLabel
                 key={l.name}
                 label={l}
-                progress={scrollYProgress}
+                progress={openingProgress}
                 reduced={reduced}
               />
             ))}
