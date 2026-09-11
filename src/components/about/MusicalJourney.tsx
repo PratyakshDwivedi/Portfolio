@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useMotionValueEvent,
+} from "framer-motion";
 import { Play } from "lucide-react";
 import { music } from "@/data/education";
 import { media } from "@/data/media";
@@ -46,6 +51,7 @@ function useTablaAudio() {
       current.current = a;
       setActiveKey(key);
       a.currentTime = 0;
+      a.volume = 1; // start at full; the Teentaal scroll-fade adjusts from here
       void a.play().catch(() => {
         // asset not present yet, or blocked, fail gracefully
         setActiveKey((k) => (k === key ? null : k));
@@ -63,7 +69,7 @@ function useTablaAudio() {
     };
   }, []);
 
-  return { activeKey, play, stop };
+  return { activeKey, play, stop, current };
 }
 
 // Teental, the 16-beat classical cycle. Vibhags (measures) of 4.
@@ -189,8 +195,49 @@ export function MusicalJourney() {
   const spin = useTransform(scrollYProgress, [0, 1], [0, 90]);
   const videoOpacity = useTransform(scrollYProgress, [0.4, 0.75], [0, 0.5]);
 
-  const { activeKey, play, stop } = useTablaAudio();
+  const { activeKey, play, stop, current } = useTablaAudio();
   const teentaalPlaying = activeKey === "teentaal";
+
+  // Keep the latest activeKey readable inside the (stable) IntersectionObserver.
+  const activeRef = useRef(activeKey);
+  activeRef.current = activeKey;
+
+  // Teentaal must only be audible inside the Music section. Same fade concept as
+  // the About background video (drive audio volume from scroll), applied ONLY to
+  // the full Teentaal track, never the short Dha/Dhin/Ta/Tin hits.
+  const teentaalVolume = (p: number) => {
+    if (p <= 0.06 || p >= 0.94) return 0;
+    if (p < 0.22) return (p - 0.06) / 0.16; // fading in from the bottom edge
+    if (p > 0.78) return (0.94 - p) / 0.16; // fading out toward the top edge
+    return 1;
+  };
+  useMotionValueEvent(scrollYProgress, "change", (p) => {
+    if (activeRef.current !== "teentaal") return;
+    const vol = Math.max(0, Math.min(1, teentaalVolume(p)));
+    // Faded to silence at the section's edges → the user has scrolled out, so
+    // stop the track entirely (scroll-driven, works even without IO).
+    if (vol <= 0) {
+      stop();
+      return;
+    }
+    const el = current.current;
+    if (el) el.volume = vol;
+  });
+
+  // Backup: once the section is fully out of view, hard-stop the Teentaal track
+  // (covers viewport changes that aren't plain scrolls).
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting && activeRef.current === "teentaal") stop();
+      },
+      { threshold: 0 },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [stop]);
 
   return (
     <section

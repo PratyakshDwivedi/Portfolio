@@ -13,7 +13,7 @@ export function EducationTimeline() {
   const lineScale = useTransform(scrollYProgress, [0, 1], [0, 1]);
 
   return (
-    <section className="relative mx-auto max-w-5xl px-6 py-28">
+    <section className="relative mx-auto max-w-5xl overflow-x-clip px-6 py-28">
       <SectionHeading eyebrow="Education" title="Where it was built." className="mb-20" />
 
       <div ref={ref} className="relative pl-8 md:pl-0">
