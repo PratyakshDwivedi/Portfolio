@@ -14,8 +14,9 @@ export const socialLinks = {
 
   instagram: "https://www.instagram.com/_pratyakshdwivedi_/",
 
-  // 👉 Paste your resume Google Drive share link (Anyone-with-link → view)
-  resume: "RESUME_DRIVE_URL_HERE",
+  // Resume Google Drive link (opens in a new tab via the View Resume CTA).
+  resume:
+    "https://drive.google.com/drive/folders/1z8heF_eOUTzXt8CsGCJ_vCeMOqxRMGNz?usp=drive_link",
 
   // ✅ Real phone number, rendered as a tel: link.
   phone: "+917991664704",

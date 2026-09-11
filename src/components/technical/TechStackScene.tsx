@@ -65,13 +65,21 @@ export function TechStackScene({ children }: { children?: ReactNode }) {
     offset: ["start start", "end start"],
   });
 
-  const blurPx = useTransform(scrollYProgress, [0.05, 0.4], [0, 14]);
+  // Blur/dim/pod fade start later and ease out more gradually, so the photo and
+  // its tech pods stay clearly visible for much longer while scrolling before
+  // receding into the background (they still recede; they're never fixed).
+  const blurPx = useTransform(scrollYProgress, [0.2, 0.6], [0, 14]);
   const filter = useMotionTemplate`blur(${blurPx}px)`;
-  const imgOpacity = useTransform(scrollYProgress, [0, 0.4, 1], [0.9, 0.5, 0.38]);
+  const imgOpacity = useTransform(scrollYProgress, [0, 0.55, 1], [0.9, 0.6, 0.38]);
   const imgScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
-  // Pods read clearly over the hero, then recede with the photo as projects
-  // arrive (they never fully vanish, staying as faint background texture).
-  const podsOpacity = useTransform(scrollYProgress, [0, 0.08, 0.4], [0, 1, 0.12]);
+  // Pods read clearly over the hero and hold full opacity well into the scroll,
+  // then recede with the photo as projects arrive (they never fully vanish,
+  // staying as faint background texture).
+  const podsOpacity = useTransform(
+    scrollYProgress,
+    [0, 0.08, 0.6, 0.85],
+    [0, 1, 1, 0.12],
+  );
   const headingOpacity = useTransform(openingProgress, [0, 0.45], [1, 0]);
 
   return (

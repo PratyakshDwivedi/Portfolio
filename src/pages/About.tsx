@@ -1,16 +1,18 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Sparkles } from "lucide-react";
 import { PageTransition } from "@/components/shared/PageTransition";
 import { AboutHero } from "@/components/about/AboutHero";
 import { EducationTimeline } from "@/components/about/EducationTimeline";
 import { SectionHeading } from "@/components/shared/SectionHeading";
 import { MusicalJourney } from "@/components/about/MusicalJourney";
+import { FunExperience } from "@/components/about/FunExperience";
 import { CinematicVideo } from "@/components/shared/CinematicVideo";
 import { media } from "@/data/media";
 
 export default function About() {
+  const [funOpen, setFunOpen] = useState(false);
   // The background video provides atmosphere for the pre-tabla experience
   // (hero → education → founders). It's a sticky layer that scrolls away and
   // fades out right as the Musical/Tabla section (with its own treatment) begins.
@@ -101,8 +103,27 @@ export default function About() {
         </div>
       </div>
 
+      {/* Hidden "Click for Fun" easter egg. Sits after the About content and
+          BEFORE the Tabla / Sadhana section. */}
+      <section className="relative mx-auto max-w-4xl px-6 pb-28 text-center">
+        <motion.button
+          type="button"
+          onClick={() => setFunOpen(true)}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.6 }}
+          className="inline-flex items-center gap-3 rounded-full bg-accent px-9 py-4 text-base font-semibold text-accent-ink shadow-[0_16px_40px_rgba(0,0,0,0.35)] transition hover:bg-accent-soft"
+        >
+          <Sparkles className="h-5 w-5" />
+          Click for Fun
+        </motion.button>
+      </section>
+
       {/* Musical/Tabla section keeps its own opaque world + tabla media */}
       <MusicalJourney />
+
+      <FunExperience open={funOpen} onClose={() => setFunOpen(false)} />
     </PageTransition>
   );
 }

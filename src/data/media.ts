@@ -31,6 +31,10 @@ export const media = {
   aboutBackgroundVideo: "/assets/videos/about-me-new.mp4",
   aboutBackgroundPoster: "/assets/images/about-poster-placeholder.jpg",
 
+  // The ORIGINAL About background video, kept and reused for the hidden
+  // "Click for Fun" easter-egg experience.
+  funVideo: "/assets/videos/about-background.mp4",
+
   // Musical section, tabla. Photo is REAL; the featured tabla VIDEO
   // is still a placeholder until supplied.
   tablaPhoto: "/assets/images/tabla.jpg",
