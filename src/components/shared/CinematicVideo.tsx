@@ -28,6 +28,12 @@ interface CinematicVideoProps {
   volumeSignal?: MotionValue<number>;
   /** Override the <video> preload strategy (default: metadata / none on mobile). */
   preload?: "auto" | "metadata" | "none";
+  /**
+   * CSS object-position for the video (object-fit stays "cover"). Lets a caller
+   * bias the crop so the important part of the subject (e.g. the head) stays in
+   * frame. Defaults to "center".
+   */
+  objectPosition?: string;
 }
 
 /**
@@ -50,6 +56,7 @@ export function CinematicVideo({
   preferSound = false,
   volumeSignal,
   preload,
+  objectPosition = "center",
 }: CinematicVideoProps) {
   const ref = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
@@ -147,6 +154,7 @@ export function CinematicVideo({
         <video
           ref={ref}
           className="h-full w-full object-cover"
+          style={{ objectPosition }}
           poster={poster}
           autoPlay
           muted={muted}

@@ -257,7 +257,7 @@ export function InfiniteGallery({
               alt={item.name}
               label={item.name}
               tint="#ffcc1d"
-              className="pointer-events-none h-full w-full object-cover object-center"
+              className="pointer-events-none h-full w-full object-cover object-top"
             />
             <span
               className={cn(

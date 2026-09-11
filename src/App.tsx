@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { FloatingNavbar } from "./components/navigation/FloatingNavbar";
@@ -36,19 +36,6 @@ export const prefetchRoute: Record<string, () => void> = {
   "/connect": () => void import("./pages/Connect"),
 };
 
-/**
- * Scroll to top on route change, EXCEPT when navigating to an in-page anchor
- * (e.g. /about#sadhana) — those targets handle their own scroll on the page.
- */
-function ScrollToTop() {
-  const { pathname, hash } = useLocation();
-  useEffect(() => {
-    if (hash) return;
-    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-  }, [pathname, hash]);
-  return null;
-}
-
 function RouteFallback() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-page">
@@ -64,8 +51,10 @@ export default function App() {
     <div className="grain min-h-screen bg-page text-content">
       <StartupLoader />
       <FloatingNavbar />
-      <ScrollToTop />
       <Suspense fallback={<RouteFallback />}>
+        {/* Scroll reset is handled per-page in PageTransition (on the incoming
+            page's mount, after the outgoing page finishes exiting), so the
+            transition never jumps to the top mid-animation. */}
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<Home />} />

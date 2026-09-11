@@ -12,8 +12,8 @@
  * ─────────────────────────────────────────────────────────────
  */
 export const media = {
-  // Connect-page hero portrait.
-  profile: "/assets/images/profile-placeholder.jpg",
+  // Connect-page hero portrait (real photo).
+  profile: "/assets/images/profile.jpg",
 
   // Home-page interactive Pixelated Canvas portrait (Pratyaksh pointing).
   pixelated: "/assets/images/pixelated.jpg",

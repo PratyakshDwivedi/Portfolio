@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
 import { PageTransition } from "@/components/shared/PageTransition";
 import { AboutHero } from "@/components/about/AboutHero";
 import { EducationTimeline } from "@/components/about/EducationTimeline";
-import { FoundersTimeline } from "@/components/about/FoundersTimeline";
+import { SectionHeading } from "@/components/shared/SectionHeading";
 import { MusicalJourney } from "@/components/about/MusicalJourney";
 import { CinematicVideo } from "@/components/shared/CinematicVideo";
 import { media } from "@/data/media";
@@ -54,6 +55,7 @@ export default function About() {
               preferSound
               preload="auto"
               volumeSignal={videoOpacity}
+              objectPosition="center 22%"
             />
             {/* extra readability scrim: darken center + edges for text */}
             <div
@@ -73,7 +75,29 @@ export default function About() {
         <div className="pointer-events-none relative z-10 -mt-[100svh]">
           <AboutHero />
           <EducationTimeline />
-          <FoundersTimeline />
+
+          {/* Concise leadership note (the full Founders Club timeline and events
+              live on the dedicated Leadership page, not duplicated here). */}
+          <section className="relative mx-auto max-w-4xl px-6 py-28">
+            <SectionHeading
+              eyebrow="Founders Club · Leadership"
+              title="I led the founders' community."
+              className="mb-8"
+            />
+            <p className="max-w-2xl text-lg leading-relaxed text-muted">
+              I headed Founders Club as a leader, from Vice President to Advisor,
+              organizing and contributing to a range of entrepreneurship events
+              and initiatives across hackathons, bootcamps, and ideation and
+              pitch platforms.
+            </p>
+            <Link
+              to="/founders"
+              className="pointer-events-auto mt-8 inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3.5 text-sm font-semibold text-accent-ink transition hover:bg-accent-soft"
+            >
+              Know More About Founders &amp; Leadership
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </section>
         </div>
       </div>
 
