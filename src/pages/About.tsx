@@ -22,6 +22,9 @@ export default function About() {
     offset: ["start start", "end end"],
   });
   const videoOpacity = useTransform(scrollYProgress, [0, 0.82, 1], [1, 1, 0]);
+  // Audio peaks at exactly 55% and fades to silence as the video scrolls away
+  // (kept separate from videoOpacity so the visual fade stays full-strength).
+  const videoVolume = useTransform(scrollYProgress, [0, 0.82, 1], [0.55, 0.55, 0]);
 
   // When the Music card deep-links here (/about#sadhana), jump straight to the
   // Sadhana / Tabla section instead of the top of the page. A double rAF lets
@@ -56,8 +59,8 @@ export default function About() {
               overlay={0.72}
               preferSound
               preload="auto"
-              volumeSignal={videoOpacity}
-              objectPosition="center 22%"
+              volumeSignal={videoVolume}
+              objectPosition="center 10%"
             />
             {/* extra readability scrim: darken center + edges for text */}
             <div

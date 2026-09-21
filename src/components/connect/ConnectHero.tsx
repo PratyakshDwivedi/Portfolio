@@ -1,13 +1,9 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { media } from "@/data/media";
-import { profile } from "@/data/profile";
-import { SmartImage } from "@/components/shared/SmartImage";
 
 /**
- * CRED-tap-inspired parallax hero: layered typography and an oversized, masked
- * profile portrait that drift at different scroll speeds for depth. The image is
- * an intentional hero element, not a boxed avatar.
+ * CRED-tap-inspired parallax hero: layered typography that drifts at different
+ * scroll speeds for depth.
  */
 export function ConnectHero() {
   const ref = useRef<HTMLDivElement>(null);
@@ -15,10 +11,8 @@ export function ConnectHero() {
     target: ref,
     offset: ["start start", "end start"],
   });
-  const imgY = useTransform(scrollYProgress, [0, 1], [0, 220]);
   const backWordY = useTransform(scrollYProgress, [0, 1], [0, -180]);
   const frontWordY = useTransform(scrollYProgress, [0, 1], [0, 120]);
-  const imgScale = useTransform(scrollYProgress, [0, 1], [1, 1.15]);
 
   return (
     <section ref={ref} className="relative h-[100svh] overflow-hidden">
@@ -30,25 +24,7 @@ export function ConnectHero() {
         LET'S TALK
       </motion.h1>
 
-      {/* middle layer, masked oversized portrait */}
-      <motion.div
-        style={{ y: imgY, scale: imgScale }}
-        className="absolute left-1/2 top-1/2 h-[62vh] w-[46vh] max-w-[85vw] -translate-x-1/2 -translate-y-1/2 overflow-hidden"
-        // organic mask so it doesn't read as a rectangle
-        // (replace profile-placeholder.jpg to swap the photo)
-      >
-        <div className="h-full w-full [clip-path:ellipse(48%_50%_at_50%_50%)]">
-          <SmartImage
-            src={media.profile}
-            alt={`${profile.name} portrait`}
-            label="profile photo"
-            className="h-full w-full object-cover grayscale"
-          />
-        </div>
-        <div className="pointer-events-none absolute inset-0 [clip-path:ellipse(48%_50%_at_50%_50%)] bg-gradient-to-t from-page/70 via-transparent to-transparent" />
-      </motion.div>
-
-      {/* front layer, name overlapping the image. Positioned near vertical
+      {/* front layer, name. Positioned near vertical
           centre (via `top`, not a transform — Framer's inline `y` owns the
           transform) so the hero content sits where the other pages' heroes do,
           instead of leaving a large empty band at the top of the page. */}

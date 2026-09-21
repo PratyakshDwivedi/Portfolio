@@ -108,7 +108,7 @@ export function IdentityCards() {
               style={flipped ? { transform: "rotateY(180deg)" } : undefined}
             >
               {/* FRONT */}
-              <div className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-2xl border border-line bg-surface p-8 [backface-visibility:hidden]">
+              <div className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-2xl border border-line bg-surface p-8 [-webkit-backface-visibility:hidden] [backface-visibility:hidden]">
                 {/* subtle themed photo background + readability overlay */}
                 <div className="pointer-events-none absolute inset-0 z-0">
                   <img
@@ -132,7 +132,7 @@ export function IdentityCards() {
               </div>
 
               {/* BACK */}
-              <div className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-2xl border border-accent/40 bg-surface p-8 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+              <div className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-2xl border border-accent/40 bg-surface p-8 [-webkit-backface-visibility:hidden] [backface-visibility:hidden] [transform:rotateY(180deg)]">
                 <div className="flex items-start justify-between">
                   <CardIcon id={id} />
                   <p className="eyebrow text-accent">{id.label}</p>
