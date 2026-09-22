@@ -59,6 +59,7 @@ export function LaptopIntro({
 function LaptopScene({ onEnter }: { onEnter: () => void }) {
   const reduced = usePrefersReducedMotion();
   const isMobile = useIsMobile();
+  const [hovered, setHovered] = useState(false);
   const screenRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState<{
     top: number;
@@ -138,23 +139,29 @@ function LaptopScene({ onEnter }: { onEnter: () => void }) {
           className="pointer-events-none absolute left-1/2 top-[90%] h-14 w-[72vw] max-w-[640px] -translate-x-1/2 rounded-[50%] bg-black/30 blur-2xl"
         />
 
-        <motion.div
-          initial={false}
-          animate={{ rotateX: restX, rotateY: restY, y: 0, scale: 1 }}
-          whileHover={
-            reduced ? undefined : { rotateX: 5, rotateY: restY - 6, y: -12, scale: 1.02 }
-          }
-          transition={{ type: "spring", stiffness: 200, damping: 22 }}
+        <button
+          type="button"
+          onClick={enter}
+          onPointerEnter={() => setHovered(true)}
+          onPointerLeave={() => setHovered(false)}
+          aria-label="Enter the Connect page"
+          className="group relative block cursor-pointer outline-none"
           style={{ transformStyle: "preserve-3d" }}
         >
-          <button
-            type="button"
-            onClick={enter}
-            aria-label="Enter the Connect page"
-            className="group relative block cursor-pointer outline-none"
+          {/* Hover detection lives on the (stationary) button above; the lift is
+              applied here on an inner element, so the transform never moves the
+              pointer target out from under the cursor (no hover flicker/jitter). */}
+          <motion.div
+            initial={false}
+            animate={
+              hovered && !reduced
+                ? { rotateX: 6, rotateY: restY - 5, y: -10, scale: 1.015 }
+                : { rotateX: restX, rotateY: restY, y: 0, scale: 1 }
+            }
+            transition={{ type: "spring", stiffness: 210, damping: 26 }}
+            className="w-[58vw] max-w-[600px]"
             style={{ transformStyle: "preserve-3d" }}
           >
-            <div className="w-[58vw] max-w-[600px]" style={{ transformStyle: "preserve-3d" }}>
               {/* LID + SCREEN (aluminum bezel, slight recline) */}
               <div
                 style={{
@@ -214,9 +221,8 @@ function LaptopScene({ onEnter }: { onEnter: () => void }) {
                 />
                 <div className="absolute -top-[1px] left-1/2 h-[3px] w-[16%] -translate-x-1/2 rounded-b-[4px] bg-[#b7bdc7]" />
               </div>
-            </div>
+            </motion.div>
           </button>
-        </motion.div>
 
         {/* clickable hint */}
         <motion.div
