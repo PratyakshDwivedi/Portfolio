@@ -201,7 +201,12 @@ export function ParticleText({
           </span>
         </div>
       ) : (
-        <canvas ref={canvasRef} className="h-full w-full touch-none" />
+        <canvas
+          ref={canvasRef}
+          // phones must be able to scroll past the hero; pointer devices keep the
+          // canvas capturing the pointer for the particle interaction
+          className={`h-full w-full ${isMobile ? "touch-auto" : "touch-none"}`}
+        />
       )}
     </div>
   );

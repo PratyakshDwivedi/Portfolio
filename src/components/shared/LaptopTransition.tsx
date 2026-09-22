@@ -13,6 +13,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useIsMobile, usePrefersReducedMotion } from "@/hooks/useMediaQuery";
 import {
   LAPTOP,
+  introLayout,
   introPose,
   lidFrameStyle,
   lidRimStyle,
@@ -250,6 +251,12 @@ const fullPose = (g: Geom) => ({
   lid: 0,
 });
 
+/** Contact shadow of the Connect desk scene for the current viewport. */
+function deskShadow() {
+  const l = introLayout(window.innerWidth, window.innerHeight);
+  return { shadowY: l.shadowY, shadowW: l.shadowW };
+}
+
 const BACKDROP = {
   position: "absolute",
   inset: 0,
@@ -448,7 +455,9 @@ export function LaptopTransition({
         const url = new URL(to, window.location.origin);
         const toPath = url.pathname;
         const fromPath = locationRef.current.pathname;
-        Promise.resolve(preloadRef.current(toPath)).catch(() => {});
+        // Destination code + first-view assets (normally already warm from the
+        // background preparation; the laptop never waits on this to start).
+        const destinationReady = Promise.resolve(preloadRef.current(toPath)).catch(() => {});
 
         const fromIntro = fromPath === "/connect" && introOpenRef.current;
         const toConnect = toPath === "/connect";
@@ -517,7 +526,8 @@ export function LaptopTransition({
         navigate(to);
         navigated = true;
 
-        // 3. the closed laptop turns while the new page mounts behind the lid
+        // 3. the closed laptop turns while the new page mounts behind the lid;
+        //    its images are decoded before the lid opens, so nothing pops in
         await Promise.all([
           runSegment(
             0.5,
@@ -526,6 +536,10 @@ export function LaptopTransition({
             applyFrame,
           ),
           waitForMount(seq, 2500),
+          Promise.race([
+            destinationReady,
+            new Promise<void>((r) => window.setTimeout(r, 900)),
+          ]),
         ]);
         spacerRef.current!.style.height = "0px";
         window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
@@ -653,7 +667,7 @@ export function LaptopTransition({
             aria-hidden
             style={{ position: "absolute", inset: 0, opacity: 0 }}
           >
-            <DeskEnvironment />
+            <DeskEnvironment {...deskShadow()} />
           </div>
         )}
         <div ref={rigRef}>

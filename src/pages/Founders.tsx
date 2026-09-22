@@ -3,6 +3,16 @@ import { FoundersHero } from "@/components/founders/FoundersHero";
 import { LeadershipIntro } from "@/components/founders/LeadershipIntro";
 import { EventCarousel } from "@/components/founders/EventCarousel";
 import { InfiniteFounderGallery } from "@/components/founders/InfiniteFounderGallery";
+import { foundersEvents } from "@/data/foundersEvents";
+import { funGallery } from "@/data/media";
+import { registerRouteAssets } from "@/lib/assets";
+
+// Event covers are the carousel itself; each event's photos (expanded view)
+// and the fun wall are prepared as soon as the page is visited.
+registerRouteAssets("/founders", {
+  images: foundersEvents.map((e) => e.coverImage),
+  extras: [...foundersEvents.flatMap((e) => e.photos), ...funGallery],
+});
 
 /**
  * Founders page, the ONLY page carrying the navy+yellow Founders Club identity.

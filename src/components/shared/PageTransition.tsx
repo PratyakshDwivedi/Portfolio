@@ -1,7 +1,8 @@
-import { useLayoutEffect, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useLaptopTransition } from "./LaptopTransition";
+import { prepareRouteExtras, whenIdle } from "@/lib/assets";
 
 /**
  * Wraps each route so entering/leaving pages animate intentionally.
@@ -17,7 +18,7 @@ import { useLaptopTransition } from "./LaptopTransition";
  * aside (the laptop is the transition) so the two never stack.
  */
 export function PageTransition({ children }: { children: ReactNode }) {
-  const { hash } = useLocation();
+  const { hash, pathname } = useLocation();
   const { active: laptop, notifyMounted } = useLaptopTransition();
 
   useLayoutEffect(() => {
@@ -29,6 +30,12 @@ export function PageTransition({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
     notifyMounted();
   }, [notifyMounted]);
+
+  // Now that this page is being viewed, prepare its heavier, later-used
+  // assets (expanded-event photos, galleries, the fun video) in idle time.
+  useEffect(() => {
+    whenIdle(() => prepareRouteExtras(pathname));
+  }, [pathname]);
 
   return (
     <motion.main

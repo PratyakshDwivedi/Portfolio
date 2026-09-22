@@ -10,6 +10,17 @@ import { MusicalJourney } from "@/components/about/MusicalJourney";
 import { FunExperience } from "@/components/about/FunExperience";
 import { CinematicVideo } from "@/components/shared/CinematicVideo";
 import { media } from "@/data/media";
+import { registerRouteAssets } from "@/lib/assets";
+
+// The background video is the first thing on the page; the tabla sounds must
+// play on the first tap; the hidden fun video is buffered once the page is
+// visited so it starts the instant the lock opens.
+registerRouteAssets("/about", {
+  images: [media.tablaPhoto],
+  audio: [...Object.values(media.tablaSounds), media.teentaalFull],
+  video: [media.aboutBackgroundVideo],
+  extraVideo: [media.funVideo],
+});
 
 export default function About() {
   const [funOpen, setFunOpen] = useState(false);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,6 +13,7 @@ import {
   Pause,
 } from "lucide-react";
 import { media } from "@/data/media";
+import { getVideo } from "@/lib/assets";
 
 // The unlock combination. Deliberately NOT surfaced anywhere in the UI beyond
 // the birthday hint (18 May → 1 8 0 5).
@@ -45,6 +46,11 @@ function FunOverlay({ onClose }: { onClose: () => void }) {
   const [digits, setDigits] = useState<number[]>([0, 0, 0, 0]);
   const [unlocked, setUnlocked] = useState(false);
   const [wrong, setWrong] = useState(false);
+
+  // Make sure the fun video is buffering while the visitor works the lock.
+  useEffect(() => {
+    getVideo(media.funVideo);
+  }, []);
 
   // Lock scroll while open; restore the exact position on unmount so Back
   // returns the visitor to where they were on the About page.
@@ -183,15 +189,26 @@ function FunOverlay({ onClose }: { onClose: () => void }) {
 
 /** Full-screen playback of the original About background video, opened only
  *  after the correct code. Autoplay with sound is allowed here because it
- *  follows the user's Open click (a genuine gesture). */
+ *  follows the user's Open click (a genuine gesture).
+ *
+ *  The <video> is the site's persistent, pre-buffered element for this file
+ *  (buffering since the About page was visited), attached here, so playback
+ *  starts on its first frame the instant the lock opens instead of loading. */
 function FunVideo() {
-  const ref = useRef<HTMLVideoElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLVideoElement | null>(null);
   const [muted, setMuted] = useState(false);
   const [playing, setPlaying] = useState(true);
 
-  useEffect(() => {
-    const v = ref.current;
-    if (!v) return;
+  useLayoutEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const v = getVideo(media.funVideo);
+    v.className = "h-full w-full object-cover";
+    v.loop = true;
+    host.appendChild(v);
+    ref.current = v;
+    v.currentTime = 0;
     v.muted = false;
     v.play()
       .then(() => setPlaying(true))
@@ -201,6 +218,12 @@ function FunVideo() {
         setMuted(true);
         v.play().catch(() => setPlaying(false));
       });
+    return () => {
+      v.pause();
+      v.muted = true;
+      v.remove();
+      ref.current = null;
+    };
   }, []);
 
   const toggleMute = () => {
@@ -230,14 +253,7 @@ function FunVideo() {
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       className="relative aspect-video max-h-[82vh] w-[92vw] max-w-6xl overflow-hidden rounded-2xl border border-line shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
     >
-      <video
-        ref={ref}
-        src={media.funVideo}
-        className="h-full w-full object-cover"
-        autoPlay
-        loop
-        playsInline
-      />
+      <div ref={hostRef} className="h-full w-full" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-page/50 via-transparent to-page/20" />
 
       {/* top-right controls: mute + pause/play */}

@@ -6,6 +6,20 @@ import { HomeHero } from "@/components/home/HomeHero";
 import { PixelatedCanvas } from "@/components/home/PixelatedCanvas";
 import { IdentityCards } from "@/components/home/IdentityCards";
 import { media } from "@/data/media";
+import { registerRouteAssets } from "@/lib/assets";
+
+// The portrait canvas + identity-card art must be decoded before the user
+// scrolls to them / hovers a card (so the flip never reveals a blank card).
+registerRouteAssets("/", {
+  images: [
+    media.pixelated,
+    media.technicalBg,
+    media.fcLogo,
+    media.tablaCard,
+    media.tablaPhoto,
+    "/assets/images/events/foundathon-3/thumbnail.jpg",
+  ],
+});
 
 export default function Home() {
   const ref = useRef<HTMLDivElement>(null);

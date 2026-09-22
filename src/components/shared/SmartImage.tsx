@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isImageReady } from "@/lib/assets";
 
 interface SmartImageProps {
   src: string;
@@ -19,7 +20,11 @@ interface SmartImageProps {
  */
 export function SmartImage({ src, alt, className, label, tint = "#FFCC1D" }: SmartImageProps) {
   const [failed, setFailed] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  // Images the site has already prepared (fetched + decoded) render at once:
+  // no lazy wait and no fade, so nothing pops in during an animation. Anything
+  // not prepared yet keeps the soft lazy fade-in.
+  const [ready] = useState(() => isImageReady(src));
+  const [loaded, setLoaded] = useState(ready);
 
   if (failed) {
     return (
@@ -53,12 +58,12 @@ export function SmartImage({ src, alt, className, label, tint = "#FFCC1D" }: Sma
     <img
       src={src}
       alt={alt}
-      loading="lazy"
+      loading={ready ? "eager" : "lazy"}
       decoding="async"
       onError={() => setFailed(true)}
       onLoad={() => setLoaded(true)}
       className={cn(
-        "transition-opacity duration-700",
+        !ready && "transition-opacity duration-700",
         loaded ? "opacity-100" : "opacity-0",
         className,
       )}

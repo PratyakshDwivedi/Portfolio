@@ -210,7 +210,9 @@ export function InfiniteGallery({
       style={{
         perspective: "1100px",
         perspectiveOrigin: "50% 50%",
-        touchAction: "none",
+        // Phones: let vertical swipes scroll the page (the wall still drags
+        // sideways and keeps drifting); pointer devices keep full 2D dragging.
+        touchAction: isMobile ? "pan-y" : "none",
         WebkitMaskImage:
           "radial-gradient(130% 130% at 50% 50%, #000 55%, transparent 100%)",
         maskImage:

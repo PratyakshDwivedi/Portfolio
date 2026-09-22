@@ -4,6 +4,7 @@ import { ChevronDown } from "lucide-react";
 import { WritingAnimation } from "./WritingAnimation";
 import { CodeReveal } from "./CodeReveal";
 import { profile } from "@/data/profile";
+import { useSiteReady } from "@/lib/assets";
 
 type Phase = "writing" | "reveal";
 
@@ -38,22 +39,11 @@ export function HomeHero() {
   const [skipIntro] = useState(introSeen);
   const [phase, setPhase] = useState<Phase>(skipIntro ? "reveal" : "writing");
   const [showExtras, setShowExtras] = useState(skipIntro);
-  // Gate the intro on genuine initial load, so the startup skeleton hands off
-  // directly to the writing animation instead of it running behind the loader.
-  const [ready, setReady] = useState(
-    () => skipIntro || document.readyState === "complete",
-  );
-
-  useEffect(() => {
-    if (ready) return;
-    if (document.readyState === "complete") {
-      setReady(true);
-      return;
-    }
-    const onLoad = () => setReady(true);
-    window.addEventListener("load", onLoad, { once: true });
-    return () => window.removeEventListener("load", onLoad);
-  }, [ready]);
+  // Gate the intro on the site-ready signal (the same one the startup loader
+  // waits for), so the skeleton hands off directly to the writing animation
+  // instead of it running behind the loader, with fonts already in place.
+  const siteReady = useSiteReady();
+  const ready = skipIntro || siteReady;
 
   // Mark the intro as spent for this page-load as soon as it is going to play
   // (not when it finishes). This guarantees exactly one intro per full load: a
@@ -106,7 +96,7 @@ export function HomeHero() {
 
       {/* Stage: name + identities + code */}
       {phase === "reveal" && (
-        <div className="relative flex flex-col items-center text-center">
+        <div className="relative flex w-full flex-col items-center text-center">
           <motion.p
             initial={skipIntro ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -140,7 +130,7 @@ export function HomeHero() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="mt-10 flex flex-col items-center gap-10"
+                className="mt-10 flex w-full flex-col items-center gap-10"
               >
                 {/* identities (Tabla intentionally omitted from the intro) */}
                 <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm sm:text-base">

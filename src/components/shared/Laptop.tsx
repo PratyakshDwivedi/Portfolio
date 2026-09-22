@@ -22,39 +22,55 @@ export const LAPTOP = {
   lidClosed: -106, // lid lying on the deck: -(180 - deckAngle)
 } as const;
 
-/** Resting pose of the laptop on the Connect desk (desktop). */
+/** Resting pose of the laptop on the Connect desk. */
 export const INTRO = {
-  outerVw: 0.58,
   outerMax: 600,
   rotX: 8,
   rotY: 26,
   rotYMobile: 14,
-  // margin-top of the laptop in the desk scene: calc(a vh - min(b vh, c px) + d vh)
-  mt: { a: 10, b: 15, c: 150, d: -16 },
 } as const;
 
-export const INTRO_FONT_SIZE = `min(${INTRO.outerVw * 100}vw, ${INTRO.outerMax / 100}px)`;
-export const INTRO_MARGIN_TOP = `calc(${INTRO.mt.a}vh - min(${INTRO.mt.b}vh, ${INTRO.mt.c}px) + ${INTRO.mt.d}vh)`;
-
-/** Same geometry as the CSS above, in px, so the transition can land exactly
- *  where the Connect desk scene draws the laptop. */
-export function introPose(innerW: number, innerH: number) {
-  const outer = Math.min(INTRO.outerVw * innerW, INTRO.outerMax);
+/**
+ * Where the laptop sits on the Connect desk for a given viewport, in px. The
+ * ONE source of truth for both the desk scene (LaptopIntro) and the page
+ * transition landing on it, so they always match exactly.
+ *
+ *  - landscape: the laptop takes 58% of the width (max 600px), lid near the
+ *    top third, keyboard resting on the desk surface.
+ *  - phones (< 640px): a larger laptop (88% of the width) so it stays usable.
+ *  - portrait screens: the hinge sits at 62% of the height, so the laptop rests
+ *    on the desk instead of floating above it on a tall screen.
+ *  - never taller than the viewport allows (landscape phones).
+ */
+export function introLayout(W: number, H: number) {
+  const outer = Math.min((W < 640 ? 0.88 : 0.58) * W, INTRO.outerMax, H);
   const em = outer / 100;
-  const mt =
-    (INTRO.mt.a / 100) * innerH -
-    Math.min((INTRO.mt.b / 100) * innerH, INTRO.mt.c) +
-    (INTRO.mt.d / 100) * innerH;
-  // flex-centred item with a top margin: its border box starts here
-  const top = (innerH - LAPTOP.boxH * em + mt) / 2;
+  const boxH = LAPTOP.boxH * em;
+  const top =
+    H > W
+      ? 0.62 * H - LAPTOP.lidH * em
+      : (H - boxH + (0.1 * H - Math.min(0.15 * H, 150) - 0.16 * H)) / 2;
+  const hingeY = top + LAPTOP.lidH * em;
   return {
     outer,
-    cx: innerW / 2,
+    em,
+    // margin-top that puts a flex-centred box of height boxH at `top`
+    marginTop: 2 * top - H + boxH,
+    cx: W / 2,
     cy: top + LAPTOP.screenCY * em,
-    rx: INTRO.rotX,
-    ry: INTRO.rotY,
-    lid: LAPTOP.lidRest,
+    rx: INTRO.rotX as number,
+    ry: (W <= 768 ? INTRO.rotYMobile : INTRO.rotY) as number,
+    lid: LAPTOP.lidRest as number,
+    // contact shadow (centre) under the keyboard deck
+    shadowY: hingeY + 13 * em,
+    shadowW: 0.96 * outer,
   };
+}
+
+/** The desk pose the page transition lands on / leaves from. */
+export function introPose(innerW: number, innerH: number) {
+  const l = introLayout(innerW, innerH);
+  return { outer: l.outer, cx: l.cx, cy: l.cy, rx: l.rx, ry: l.ry, lid: l.lid };
 }
 
 const ALU = "linear-gradient(155deg,#f4f6f9 0%,#ccd1d9 55%,#b3b9c3 100%)";
@@ -272,9 +288,10 @@ export const DESK_WALL =
 /**
  * The Connect desk environment, built from layered CSS (no photo): daylight
  * wall, window light, abstract greenery, a receding desk surface with a lit
- * front edge and apron, and a contact shadow under the laptop.
+ * front edge and apron, and a contact shadow under the laptop (positioned from
+ * `introLayout`, so it sits under the keyboard on every screen shape).
  */
-export function DeskEnvironment() {
+export function DeskEnvironment({ shadowY, shadowW }: { shadowY: number; shadowW: number }) {
   return (
     <>
       <div className="pointer-events-none absolute inset-0" style={{ background: DESK_WALL }} />
@@ -321,7 +338,10 @@ export function DeskEnvironment() {
       </div>
 
       {/* grounding contact shadow under the laptop base */}
-      <div className="pointer-events-none absolute left-1/2 top-[71%] h-16 w-[54vw] max-w-[580px] -translate-x-1/2 rounded-[50%] bg-black/25 blur-3xl" />
+      <div
+        className="pointer-events-none absolute left-1/2 h-16 -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-black/25 blur-3xl"
+        style={{ top: shadowY, width: shadowW }}
+      />
     </>
   );
 }

@@ -19,7 +19,7 @@ export function ConnectHero() {
       {/* back layer, oversized word drifting up */}
       <motion.h1
         style={{ y: backWordY }}
-        className="text-display pointer-events-none absolute left-1/2 top-[12%] w-full -translate-x-1/2 text-center text-[24vw] leading-none text-content/[0.06]"
+        className="text-display pointer-events-none absolute inset-x-0 top-[12%] text-center text-[24vw] leading-none text-content/[0.06]"
       >
         LET'S TALK
       </motion.h1>

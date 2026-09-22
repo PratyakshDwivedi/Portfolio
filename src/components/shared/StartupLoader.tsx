@@ -1,15 +1,18 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { isSiteReady, useSiteReady } from "@/lib/assets";
 
 const BARS = 7;
 
 /**
  * Startup skeleton loader (a row of tall bars pulsing at staggered heights).
  *
- * It is shown ONLY while the browser is genuinely still loading initial
- * resources — its lifetime is bound to the real `window` load event, not an
- * arbitrary timer. Once the page has finished loading it hides, handing off
- * directly to the Home PD intro animation.
+ * It is shown ONLY while the browser is genuinely still preparing the first
+ * view: its lifetime is bound to the site-ready signal (window load + web
+ * fonts + the landing page's above-the-fold assets, capped), not an arbitrary
+ * timer. Fonts swapping in behind it means no text reflow once it hides, and
+ * it hands off directly to the Home PD intro animation (which waits for the
+ * same signal).
  *
  * Because this component mounts once at the app root and never unmounts,
  * client-side navigation between sections never re-shows it. On a genuine
@@ -18,24 +21,15 @@ const BARS = 7;
  * flash, since `document.readyState` is already "complete").
  */
 export function StartupLoader() {
-  const [show, setShow] = useState(() => {
+  const [initiallyLoading] = useState(() => {
     try {
-      return document.readyState !== "complete";
+      return !isSiteReady() && document.readyState !== "complete";
     } catch {
       return false;
     }
   });
-
-  useEffect(() => {
-    if (!show) return;
-    if (document.readyState === "complete") {
-      setShow(false);
-      return;
-    }
-    const done = () => setShow(false);
-    window.addEventListener("load", done, { once: true });
-    return () => window.removeEventListener("load", done);
-  }, [show]);
+  const ready = useSiteReady();
+  const show = initiallyLoading && !ready;
 
   return (
     <AnimatePresence>

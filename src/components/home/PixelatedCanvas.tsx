@@ -217,7 +217,10 @@ export function PixelatedCanvas({
 
   return (
     <div ref={wrapRef} className={className} role="img" aria-label="Pratyaksh Dwivedi">
-      <canvas ref={canvasRef} className="h-full w-full touch-none" />
+      <canvas
+        ref={canvasRef}
+        className={`h-full w-full ${isMobile ? "touch-auto" : "touch-none"}`}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from "react";
+import { useRef, type CSSProperties, type ReactNode } from "react";
 import {
   motion,
   useScroll,
@@ -7,13 +7,13 @@ import {
 } from "framer-motion";
 import { media } from "@/data/media";
 import { SmartImage } from "@/components/shared/SmartImage";
-import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
+import { useIsMobile, usePrefersReducedMotion } from "@/hooks/useMediaQuery";
 
 // Real stack only, positioned around the figure (avoiding the centre/face).
 const LABELS: { name: string; x: number; y: number }[] = [
-  { name: "Python", x: 6, y: 20 },
+  { name: "Python", x: 9, y: 20 },
   { name: "TypeScript", x: 13, y: 40 },
-  { name: "C++", x: 4, y: 60 },
+  { name: "C++", x: 7, y: 60 },
   { name: "React", x: 15, y: 78 },
   { name: "Java", x: 22, y: 30 },
   { name: "FastAPI", x: 18, y: 90 },
@@ -27,15 +27,33 @@ const LABELS: { name: string; x: number; y: number }[] = [
 
 /** A single anchored tech pod. Position is fixed at x%/y% of the sticky layer;
  *  its fade + blur are driven by the parent motion layer, so pods stay put
- *  (anchored) rather than drifting with every scroll tick. */
-function FloatingLabel({ label }: { label: (typeof LABELS)[number] }) {
+ *  (anchored) rather than drifting with every scroll tick.
+ *
+ *  `compact` (phones/small tablets): a pod centred on its x% anchor is wider
+ *  than the gutter it sits in, so it would be cut off by the screen edge.
+ *  There the pod hugs the matching edge instead, keeping the same two columns
+ *  flanking the figure with every label fully readable. */
+function FloatingLabel({
+  label,
+  compact,
+}: {
+  label: (typeof LABELS)[number];
+  compact: boolean;
+}) {
+  const top = `${label.y}%`;
+  const pos: CSSProperties = compact
+    ? label.x < 50
+      ? { left: "0.5rem", top }
+      : { right: "0.5rem", top }
+    : { left: `${label.x}%`, top };
+
   return (
     <div
-      style={{ left: `${label.x}%`, top: `${label.y}%` }}
-      className="absolute -translate-x-1/2 -translate-y-1/2"
+      style={pos}
+      className={`absolute -translate-y-1/2 ${compact ? "" : "-translate-x-1/2"}`}
     >
-      <span className="glass flex items-center gap-2.5 rounded-full px-4 py-2.5 text-sm font-medium text-content shadow-[0_8px_26px_rgba(0,0,0,0.4)] sm:gap-3 sm:px-6 sm:py-3.5 sm:text-lg">
-        <span className="h-2 w-2 rounded-full bg-accent sm:h-2.5 sm:w-2.5" />
+      <span className="glass flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-content shadow-[0_8px_26px_rgba(0,0,0,0.4)] sm:gap-3 sm:px-6 sm:py-3.5 sm:text-lg">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent sm:h-2.5 sm:w-2.5" />
         {label.name}
       </span>
     </div>
@@ -54,6 +72,7 @@ export function TechStackScene({ children }: { children?: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const openingRef = useRef<HTMLDivElement>(null);
   const reduced = usePrefersReducedMotion();
+  const compact = useIsMobile();
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end end"],
@@ -115,7 +134,7 @@ export function TechStackScene({ children }: { children?: ReactNode }) {
           className="absolute inset-0"
         >
           {LABELS.map((l) => (
-            <FloatingLabel key={l.name} label={l} />
+            <FloatingLabel key={l.name} label={l} compact={compact} />
           ))}
         </motion.div>
       </div>

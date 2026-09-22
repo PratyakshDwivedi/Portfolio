@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { MousePointerClick } from "lucide-react";
-import { usePrefersReducedMotion, useIsMobile } from "@/hooks/useMediaQuery";
+import {
+  usePrefersReducedMotion,
+  useIsMobile,
+  useViewportSize,
+} from "@/hooks/useMediaQuery";
 import { useLaptopTransition } from "@/components/shared/LaptopTransition";
 import {
   LAPTOP,
-  INTRO,
-  INTRO_FONT_SIZE,
-  INTRO_MARGIN_TOP,
+  introLayout,
   DESK_WALL,
   lidFrameStyle,
   lidRimStyle,
@@ -67,10 +69,13 @@ function LaptopScene({ onEnter, instant }: { onEnter: () => void; instant: boole
   const [hovered, setHovered] = useState(false);
   const [entering, setEntering] = useState(false);
 
-  // Resting 3/4 pose: turned so the right side recedes, seen slightly from
-  // above. Gentler on small screens so the screen stays readable.
-  const restX = INTRO.rotX;
-  const restY = isMobile ? INTRO.rotYMobile : INTRO.rotY;
+  // Size / placement / resting 3/4 pose for this viewport (shared with the page
+  // transition so its landing matches exactly). Gentler turn on small screens
+  // so the screen stays readable.
+  const { w, h } = useViewportSize();
+  const layout = introLayout(w, h);
+  const restX = layout.rx;
+  const restY = layout.ry;
 
   // How far the whole laptop scales toward the viewer, large enough that the
   // screen grows past the viewport edges while the keyboard scales out of frame.
@@ -100,7 +105,7 @@ function LaptopScene({ onEnter, instant }: { onEnter: () => void; instant: boole
         animate={{ opacity: entering ? 0 : 1 }}
         transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       >
-        <DeskEnvironment />
+        <DeskEnvironment shadowY={layout.shadowY} shadowW={layout.shadowW} />
       </motion.div>
 
       {/* THE LAPTOP. On click the whole laptop scales toward the viewer from the
@@ -110,8 +115,8 @@ function LaptopScene({ onEnter, instant }: { onEnter: () => void; instant: boole
       <motion.div
         className="relative"
         style={{
-          marginTop: INTRO_MARGIN_TOP,
-          transformOrigin: `50% calc(${INTRO_FONT_SIZE} * ${LAPTOP.screenCY})`,
+          marginTop: layout.marginTop,
+          transformOrigin: `50% ${LAPTOP.screenCY * layout.em}px`,
           transformStyle: "preserve-3d",
         }}
         initial={false}
@@ -150,7 +155,7 @@ function LaptopScene({ onEnter, instant }: { onEnter: () => void; instant: boole
             style={{
               position: "relative",
               width: "100em",
-              fontSize: INTRO_FONT_SIZE,
+              fontSize: `${layout.em}px`,
               transformOrigin: `50% ${LAPTOP.screenCY}em`,
               transformStyle: "preserve-3d",
             }}

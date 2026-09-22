@@ -21,7 +21,7 @@ interface Testimonial {
   testimonial: string;
 }
 
-const testimonials: Testimonial[] = [
+export const testimonials: Testimonial[] = [
   {
     name: "Kushagr",
     role: "Associate Lead · Current President, FC",

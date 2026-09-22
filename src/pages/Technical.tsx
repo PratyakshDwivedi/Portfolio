@@ -4,6 +4,15 @@ import { TechStackScene } from "@/components/technical/TechStackScene";
 import { ProjectFolder } from "@/components/technical/ProjectFolder";
 import { SectionHeading } from "@/components/shared/SectionHeading";
 import { projects } from "@/data/projects";
+import { media } from "@/data/media";
+import { registerRouteAssets } from "@/lib/assets";
+
+// Background portrait behind the stack scene, plus each project's pipeline
+// image (shown inside the opened folder).
+registerRouteAssets("/technical", {
+  images: [media.technicalBg],
+  extras: projects.flatMap((p) => (p.pipelineImage ? [p.pipelineImage] : [])),
+});
 
 export default function Technical() {
   return (

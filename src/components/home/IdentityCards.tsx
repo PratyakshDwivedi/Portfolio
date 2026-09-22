@@ -4,7 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { prefetchRoute } from "@/App";
 import { media } from "@/data/media";
-import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
+import { useIsMobile, usePrefersReducedMotion } from "@/hooks/useMediaQuery";
 
 interface Identity {
   to: string;
@@ -73,6 +73,9 @@ function CardIcon({ id }: { id: Identity }) {
 export function IdentityCards() {
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const reduced = usePrefersReducedMotion();
+  // Touch has no hover: the first tap flips a card (revealing its back), the
+  // second tap follows the link. Mouse/keyboard keep hover/focus + one click.
+  const isMobile = useIsMobile();
 
   return (
     <div
@@ -89,7 +92,8 @@ export function IdentityCards() {
             key={id.to}
             to={id.to}
             aria-label={`${id.label}: ${id.hook}`}
-            onMouseEnter={() => {
+            onPointerEnter={(e) => {
+              if (e.pointerType !== "mouse") return;
               setActiveIdx(i);
               prefetchRoute[id.to.split("#")[0]]?.();
             }}
@@ -98,6 +102,12 @@ export function IdentityCards() {
               prefetchRoute[id.to.split("#")[0]]?.();
             }}
             onBlur={() => setActiveIdx(null)}
+            onClick={(e) => {
+              if (!isMobile || isActive) return; // follow the link
+              e.preventDefault(); // first tap: flip this card instead
+              setActiveIdx(i);
+              prefetchRoute[id.to.split("#")[0]]?.();
+            }}
             className={cn(
               "group relative block h-64 rounded-2xl outline-none transition-all duration-500 [perspective:1200px]",
               dimmed ? "scale-[0.97] opacity-50 blur-[1.5px]" : "scale-100 opacity-100 blur-0",

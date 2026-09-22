@@ -11,15 +11,17 @@ import { media } from "@/data/media";
 import { SmartImage } from "@/components/shared/SmartImage";
 import { CinematicVideo } from "@/components/shared/CinematicVideo";
 import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
+import { getAudio } from "@/lib/assets";
 
 /**
- * Shared single-channel tabla audio. Caches one HTMLAudioElement per source
- * (so hovering never spawns duplicates), only ever plays one at a time, stops
- * and resets the previous sound when switching, and cleans everything up on
- * unmount. Missing files fail silently (play() promise rejection is swallowed).
+ * Shared single-channel tabla audio. Uses the site's persistent, pre-buffered
+ * audio element per source (so the first tap plays instantly and hovering never
+ * spawns duplicates), only ever plays one at a time, stops and resets the
+ * previous sound when switching, and silences everything on unmount. Missing
+ * files fail silently (play() promise rejection is swallowed).
  */
 function useTablaAudio() {
-  const cache = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const used = useRef<Set<HTMLAudioElement>>(new Set());
   const current = useRef<HTMLAudioElement | null>(null);
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
@@ -41,12 +43,8 @@ function useTablaAudio() {
         prev.pause();
         prev.currentTime = 0;
       }
-      let a = cache.current.get(src);
-      if (!a) {
-        a = new Audio(src);
-        a.preload = "auto";
-        cache.current.set(src, a);
-      }
+      const a = getAudio(src);
+      used.current.add(a);
       a.onended = () => setActiveKey((k) => (k === key ? null : k));
       current.current = a;
       setActiveKey(key);
@@ -61,10 +59,16 @@ function useTablaAudio() {
   );
 
   useEffect(() => {
-    const cached = cache.current;
+    // make sure every bol + the full cycle is buffering before the first tap
+    [...Object.values(media.tablaSounds), media.teentaalFull].forEach(getAudio);
+    const played = used.current;
     return () => {
-      cached.forEach((a) => a.pause());
-      cached.clear();
+      played.forEach((a) => {
+        a.pause();
+        a.currentTime = 0;
+        a.onended = null;
+      });
+      played.clear();
       current.current = null;
     };
   }, []);
@@ -152,7 +156,10 @@ function TaalCycle({
             key={i}
             type="button"
             aria-label={`Play ${bol}`}
-            onMouseEnter={() => onPlay(key, src)}
+            // hover plays on a mouse; on touch a tap is the (single) trigger
+            onPointerEnter={(e) => {
+              if (e.pointerType === "mouse") onPlay(key, src);
+            }}
             onClick={() => onPlay(key, src)}
             initial={reduced ? false : { opacity: 0.35 }}
             animate={

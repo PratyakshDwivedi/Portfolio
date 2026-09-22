@@ -1,5 +1,11 @@
 import { PageTransition } from "@/components/shared/PageTransition";
-import { Testimonials } from "@/components/founders/Testimonials";
+import { Testimonials, testimonials } from "@/components/founders/Testimonials";
+import { registerRouteAssets } from "@/lib/assets";
+
+// The gallery of faces is the page's first view.
+registerRouteAssets("/testimonials", {
+  aboveFold: testimonials.map((t) => t.image),
+});
 
 /**
  * Top-level Testimonials page. The Infinite Gallery testimonial effect (formerly

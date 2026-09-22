@@ -54,7 +54,7 @@ export function CodeReveal({ start }: { start: boolean }) {
           identity.ts
         </span>
       </div>
-      <pre className="overflow-x-auto p-5 font-mono text-[0.8rem] leading-relaxed">
+      <pre className="overflow-x-auto p-4 font-mono text-[0.72rem] leading-relaxed sm:p-5 sm:text-[0.8rem]">
         <code>
           {lines.map((line, i) => (
             <motion.div

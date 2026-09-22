@@ -1,10 +1,10 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { FloatingNavbar } from "./components/navigation/FloatingNavbar";
 import { StartupLoader } from "./components/shared/StartupLoader";
 import { LaptopTransition } from "./components/shared/LaptopTransition";
-import { media } from "./data/media";
+import { prepareRoute, prepareSite } from "./lib/assets";
 
 // Route chunk loaders (shared by lazy() and the laptop transition's preload).
 const routeImporters = {
@@ -24,33 +24,28 @@ const Founders = lazy(routeImporters["/founders"]);
 const Testimonials = lazy(routeImporters["/testimonials"]);
 const Connect = lazy(routeImporters["/connect"]);
 
-// Route prefetch helpers , call on nav hover/focus so the chunk (and, for
-// About, the heavy background video) is ready before the user arrives.
-let aboutVideoPreloaded = false;
-export const prefetchAbout = () => {
-  void import("./pages/About");
-  if (!aboutVideoPreloaded && typeof document !== "undefined") {
-    aboutVideoPreloaded = true;
-    const link = document.createElement("link");
-    link.rel = "preload";
-    link.as = "video";
-    link.href = media.aboutBackgroundVideo;
-    document.head.appendChild(link);
-  }
-};
-export const prefetchRoute: Record<string, () => void> = {
-  "/": () => void import("./pages/Home"),
-  "/about": prefetchAbout,
-  "/technical": () => void import("./pages/Technical"),
-  "/founders": () => void import("./pages/Founders"),
-  "/testimonials": () => void import("./pages/Testimonials"),
-  "/connect": () => void import("./pages/Connect"),
-};
+type RoutePath = keyof typeof routeImporters;
 
-/** Start loading a route (chunk + About's video) before the laptop reopens. */
-const preloadRoute = (path: string) => {
-  prefetchRoute[path]?.();
-  return routeImporters[path as keyof typeof routeImporters]?.();
+/** Load a route's code, then prepare what its first view and first
+ *  interactions need (images decoded, audio + video buffering). */
+const loadRoute = (path: string) =>
+  (routeImporters[path as RoutePath]?.() ?? Promise.resolve())
+    .then(() => prepareRoute(path, true))
+    .catch(() => {});
+
+// Route prefetch helpers: call on nav hover/focus so the chunk AND the page's
+// assets (for About: the background video) are ready before the user arrives.
+const warm = (path: string) => () => {
+  void loadRoute(path);
+};
+export const prefetchAbout = warm("/about");
+export const prefetchRoute: Record<string, () => void> = {
+  "/": warm("/"),
+  "/about": prefetchAbout,
+  "/technical": warm("/technical"),
+  "/founders": warm("/founders"),
+  "/testimonials": warm("/testimonials"),
+  "/connect": warm("/connect"),
 };
 
 function RouteFallback() {
@@ -64,13 +59,20 @@ function RouteFallback() {
 export default function App() {
   const location = useLocation();
 
+  // Prepare the first view, then warm every page's code + assets in the
+  // background so navigations and interactions never wait on the network.
+  useEffect(() => {
+    prepareSite(location.pathname, routeImporters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="grain min-h-screen bg-page text-content">
       <StartupLoader />
       <FloatingNavbar />
       {/* One shared laptop page-transition wraps the existing routes (it is a
           plain wrapper whenever no transition is running). */}
-      <LaptopTransition preload={preloadRoute}>
+      <LaptopTransition preload={loadRoute}>
         <Suspense fallback={<RouteFallback />}>
           {/* Scroll reset is handled per-page in PageTransition (on the incoming
               page's mount, after the outgoing page finishes exiting), so the

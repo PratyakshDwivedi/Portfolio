@@ -116,5 +116,11 @@ export function LiquidASCII({ color = "#FFCC1D" }: { color?: string }) {
     };
   }, [color, reduced, isMobile]);
 
-  return <canvas ref={canvasRef} className="h-full w-full touch-none" aria-hidden />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className={`h-full w-full ${isMobile ? "touch-auto" : "touch-none"}`}
+      aria-hidden
+    />
+  );
 }
