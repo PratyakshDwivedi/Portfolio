@@ -1,42 +1,37 @@
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { MousePointerClick } from "lucide-react";
 import { usePrefersReducedMotion, useIsMobile } from "@/hooks/useMediaQuery";
+import { useLaptopTransition } from "@/components/shared/LaptopTransition";
+import {
+  LAPTOP,
+  INTRO,
+  INTRO_FONT_SIZE,
+  INTRO_MARGIN_TOP,
+  DESK_WALL,
+  lidFrameStyle,
+  lidRimStyle,
+  screenStyle,
+  LaptopCameraNotch,
+  LaptopLidBack,
+  LaptopHinge,
+  LaptopDeck,
+  ScreenPreview,
+  DeskEnvironment,
+} from "@/components/shared/Laptop";
 
 /**
- * A glimpse of the Connect hero shown "on the laptop screen": the real
- * ConnectHero content (oversized back word + name) so the hand-off from the zoom
- * into the actual page reads as continuous. Sized in container-query units so it
- * scales from the small on-desk size up to full-screen.
- */
-function ScreenPreview() {
-  return (
-    <div className="relative h-full w-full overflow-hidden bg-page [container-type:size]">
-      <div className="pointer-events-none absolute inset-x-0 top-[8%] text-center text-[22cqw] font-bold leading-none text-content/[0.06]">
-        LET'S TALK
-      </div>
-      <div className="absolute inset-0 flex flex-col items-center justify-center px-[4cqw] text-center">
-        <p className="mb-[1.5cqw] font-mono text-[3cqw] uppercase tracking-[0.3em] text-muted">
-          Connect with me
-        </p>
-        <h2 className="text-display text-[18cqw] leading-[0.85] text-content">
-          Pratyaksh
-        </h2>
-      </div>
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-transparent to-white/[0.05]" />
-    </div>
-  );
-}
-
-/**
- * Initial presentation for the Connect page: the existing silver laptop sits in a
- * custom-built (CSS-only) desk environment, soft daylight wall, a light tabletop
- * with a receding surface, gentle out-of-focus greenery, and a grounding shadow,
- * inspired by (not copied from) the supplied reference. The laptop, its hover,
- * and the click-to-zoom transition are unchanged. Clicking brings the screen
- * forward until it fills the viewport, then `onEnter` reveals the real Connect
- * section and scrolls to its contacts. Reduced-motion enters immediately.
+ * Initial presentation for the Connect page: the portfolio's silver laptop sits
+ * in a custom-built (CSS-only) desk environment. Hovering lifts it subtly.
+ * Clicking brings the WHOLE laptop toward the viewer, scaling from the screen's
+ * centre so the keyboard scales out of frame while the screen grows to fill the
+ * viewport, then hands off to the real Connect section (revealed underneath)
+ * and scrolls to its contacts. Reduced-motion enters immediately.
+ *
+ * The laptop is the shared one (components/shared/Laptop), the same laptop the
+ * page-transition system uses; when a navigation lands on Connect it settles
+ * onto this desk and this scene takes over without a fade.
  */
 export function LaptopIntro({
   open,
@@ -45,100 +40,87 @@ export function LaptopIntro({
   open: boolean;
   onEnter: () => void;
 }) {
+  const { introHidden, introInstant, setIntroOpen } = useLaptopTransition();
+
+  useEffect(() => {
+    setIntroOpen(open);
+    return () => setIntroOpen(false);
+  }, [open, setIntroOpen]);
+
+  // While a page transition shows this laptop itself, don't draw a second one.
+  if (introHidden) return null;
+
   // Portal to <body> so the fixed overlay escapes PageTransition's transformed
   // <main> (a transformed ancestor would otherwise become the containing block
   // for position:fixed, sizing the scene to the page instead of the viewport).
   return createPortal(
     <AnimatePresence>
-      {open && <LaptopScene onEnter={onEnter} />}
+      {open && <LaptopScene onEnter={onEnter} instant={introInstant} />}
     </AnimatePresence>,
     document.body,
   );
 }
 
-function LaptopScene({ onEnter }: { onEnter: () => void }) {
+function LaptopScene({ onEnter, instant }: { onEnter: () => void; instant: boolean }) {
   const reduced = usePrefersReducedMotion();
   const isMobile = useIsMobile();
   const [hovered, setHovered] = useState(false);
-  const screenRef = useRef<HTMLDivElement>(null);
-  const [zoom, setZoom] = useState<{
-    top: number;
-    left: number;
-    width: number;
-    height: number;
-  } | null>(null);
+  const [entering, setEntering] = useState(false);
 
-  // Resting 3/4 pose (unchanged laptop): turned so the right side recedes, seen
-  // slightly from above. Gentler on small screens so the screen stays readable.
-  const restX = 8;
-  const restY = isMobile ? 14 : 26;
+  // Resting 3/4 pose: turned so the right side recedes, seen slightly from
+  // above. Gentler on small screens so the screen stays readable.
+  const restX = INTRO.rotX;
+  const restY = isMobile ? INTRO.rotYMobile : INTRO.rotY;
+
+  // How far the whole laptop scales toward the viewer, large enough that the
+  // screen grows past the viewport edges while the keyboard scales out of frame.
+  const ENTER_SCALE = 3.2;
 
   const enter = () => {
-    const el = screenRef.current;
-    if (reduced || !el) {
+    if (reduced) {
       onEnter();
       return;
     }
-    const r = el.getBoundingClientRect();
-    setZoom({ top: r.top, left: r.left, width: r.width, height: r.height });
+    setEntering(true);
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
+      initial={instant ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden px-6"
-      style={{
-        perspective: 1500,
-        // custom "room" wall, soft daylight (our own gradient, not a photo)
-        background:
-          "radial-gradient(120% 100% at 68% 2%, #f3f5f8 0%, #e7ebf0 50%, #dde2e9 100%)",
-      }}
+      style={{ perspective: 1500, background: DESK_WALL }}
     >
-      {/* soft window light from the upper right */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-[10%] -top-[15%] h-[70%] w-[55%] rounded-full"
-        style={{ background: "radial-gradient(closest-side, rgba(255,255,255,0.75), transparent 70%)" }}
-      />
-      {/* gentle out-of-focus greenery atmosphere (abstract, not a plant photo) */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-[6%] top-[2%] h-[42%] w-[26%] rounded-full blur-[46px]"
-        style={{ background: "radial-gradient(closest-side, rgba(120,168,104,0.22), transparent 72%)" }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute right-[6%] top-[1%] h-[36%] w-[22%] rounded-full blur-[48px]"
-        style={{ background: "radial-gradient(closest-side, rgba(132,176,118,0.18), transparent 72%)" }}
-      />
-
-      {/* custom tabletop: a light surface the laptop rests on, with a soft back
-          edge (ambient shadow where wall meets desk) for depth. */}
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[36%]"
-        style={{
-          background: "linear-gradient(180deg, #ffffff 0%, #eef1f5 100%)",
-          boxShadow:
-            "inset 0 2px 3px rgba(120,132,150,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
-        }}
-      />
-
-      {/* laptop (fades as the screen zoom takes over) */}
+      {/* desk environment (fades as the laptop comes forward) */}
       <motion.div
-        animate={{ opacity: zoom ? 0 : 1 }}
-        transition={{ duration: 0.45 }}
-        className="relative mt-[8vh]"
-        style={{ transformStyle: "preserve-3d" }}
+        aria-hidden
+        className="absolute inset-0"
+        animate={{ opacity: entering ? 0 : 1 }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       >
-        {/* grounding contact shadow on the tabletop */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 top-[90%] h-14 w-[72vw] max-w-[640px] -translate-x-1/2 rounded-[50%] bg-black/30 blur-2xl"
-        />
+        <DeskEnvironment />
+      </motion.div>
 
+      {/* THE LAPTOP. On click the whole laptop scales toward the viewer from the
+          screen's centre, so the keyboard scales down out of frame while the
+          screen grows to fill the view. onAnimationComplete hands off to the
+          real Connect page. */}
+      <motion.div
+        className="relative"
+        style={{
+          marginTop: INTRO_MARGIN_TOP,
+          transformOrigin: `50% calc(${INTRO_FONT_SIZE} * ${LAPTOP.screenCY})`,
+          transformStyle: "preserve-3d",
+        }}
+        initial={false}
+        animate={{ scale: entering ? ENTER_SCALE : 1 }}
+        transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
+        onAnimationComplete={() => {
+          if (entering) onEnter();
+        }}
+      >
         <button
           type="button"
           onClick={enter}
@@ -148,128 +130,77 @@ function LaptopScene({ onEnter }: { onEnter: () => void }) {
           className="group relative block cursor-pointer outline-none"
           style={{ transformStyle: "preserve-3d" }}
         >
-          {/* Hover detection lives on the (stationary) button above; the lift is
-              applied here on an inner element, so the transform never moves the
-              pointer target out from under the cursor (no hover flicker/jitter). */}
+          {/* Hover detection lives on the (stationary) button above; the lift and
+              the flatten-on-enter are applied here on an inner element, so the
+              pointer target never moves out from under the cursor (no flicker). */}
           <motion.div
             initial={false}
             animate={
-              hovered && !reduced
-                ? { rotateX: 6, rotateY: restY - 5, y: -10, scale: 1.015 }
-                : { rotateX: restX, rotateY: restY, y: 0, scale: 1 }
+              entering
+                ? { rotateX: 0, rotateY: 0, y: 0, scale: 1 }
+                : hovered && !reduced
+                  ? { rotateX: 6, rotateY: restY - 5, y: -10, scale: 1.015 }
+                  : { rotateX: restX, rotateY: restY, y: 0, scale: 1 }
             }
-            transition={{ type: "spring", stiffness: 210, damping: 26 }}
-            className="w-[58vw] max-w-[600px]"
-            style={{ transformStyle: "preserve-3d" }}
+            transition={
+              entering
+                ? { duration: 1.05, ease: [0.22, 1, 0.36, 1] }
+                : { type: "spring", stiffness: 210, damping: 26 }
+            }
+            style={{
+              position: "relative",
+              width: "100em",
+              fontSize: INTRO_FONT_SIZE,
+              transformOrigin: `50% ${LAPTOP.screenCY}em`,
+              transformStyle: "preserve-3d",
+            }}
           >
-              {/* LID + SCREEN (aluminum bezel, slight recline) */}
-              <div
-                style={{
-                  transformOrigin: "bottom center",
-                  transform: "rotateX(-5deg)",
-                  transformStyle: "preserve-3d",
-                  background: "linear-gradient(155deg,#f4f6f9 0%,#ccd1d9 55%,#b3b9c3 100%)",
-                  boxShadow: "0 30px 60px rgba(60,70,90,0.35)",
-                }}
-                className="relative rounded-[16px] p-[10px]"
-              >
-                {/* camera notch */}
-                <div className="absolute left-1/2 top-[5px] h-[3px] w-[3px] -translate-x-1/2 rounded-full bg-[#3a3f47]" />
-                {/* black inner rim */}
-                <div className="rounded-[9px] bg-[#08080a] p-[7px]">
-                  <div
-                    ref={screenRef}
-                    className="relative aspect-[16/10] w-full overflow-hidden rounded-[4px]"
-                  >
+            {/* LID (slight recline) */}
+            <div
+              style={{
+                position: "relative",
+                transformOrigin: "bottom center",
+                transform: `rotateX(${LAPTOP.lidRest}deg)`,
+                transformStyle: "preserve-3d",
+              }}
+            >
+              <div style={lidFrameStyle}>
+                <LaptopCameraNotch />
+                <div style={lidRimStyle}>
+                  <div style={{ ...screenStyle, width: "100%", aspectRatio: "16 / 10" }}>
                     <ScreenPreview />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-transparent to-white/[0.10] opacity-40 transition-opacity duration-500 group-hover:opacity-100" />
                   </div>
                 </div>
               </div>
+              <LaptopLidBack />
+            </div>
+            <LaptopHinge />
+            <LaptopDeck />
+          </motion.div>
+        </button>
+      </motion.div>
 
-              {/* HINGE */}
-              <div
-                className="mx-auto h-[4px] w-[86%] rounded-b-[3px]"
-                style={{ background: "linear-gradient(180deg,#aeb4be,#8f96a2)" }}
-              />
-
-              {/* KEYBOARD DECK (folded flat toward the viewer) */}
-              <div
-                style={{
-                  transformOrigin: "top center",
-                  transform: "rotateX(74deg)",
-                  background: "linear-gradient(180deg,#eceff3 0%,#d3d8df 55%,#c0c6d0 100%)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
-                }}
-                className="relative mx-auto h-[15vh] max-h-[150px] w-[99%] rounded-b-[10px]"
-              >
-                <div
-                  className="absolute inset-x-[6%] top-[10%] h-[52%] rounded-[4px]"
-                  style={{
-                    background: "#c6ccd4",
-                    backgroundImage:
-                      "repeating-linear-gradient(90deg, rgba(0,0,0,0.16) 0 1px, transparent 1px 6.5%), repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0 1px, transparent 1px 25%)",
-                    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.15)",
-                  }}
-                />
-                <div
-                  className="absolute bottom-[10%] left-1/2 h-[28%] w-[34%] -translate-x-1/2 rounded-[5px]"
-                  style={{
-                    background: "linear-gradient(180deg,#e2e6eb,#d1d6dd)",
-                    boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.08)",
-                  }}
-                />
-                <div className="absolute -top-[1px] left-1/2 h-[3px] w-[16%] -translate-x-1/2 rounded-b-[4px] bg-[#b7bdc7]" />
-              </div>
-            </motion.div>
-          </button>
-
-        {/* clickable hint */}
+      {/* clickable hint (fades out as the laptop comes forward) */}
+      <motion.div
+        initial={instant ? { opacity: 0 } : false}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: instant ? 0.15 : 0 }}
+        className="pointer-events-none absolute bottom-8 left-1/2 -translate-x-1/2"
+      >
         <motion.div
-          animate={{ opacity: [0.55, 1, 0.55] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-          className="mt-[10vh] flex items-center justify-center gap-2 font-mono text-xs tracking-wide text-[#5a6472]"
+          animate={entering ? { opacity: 0 } : { opacity: [0.55, 1, 0.55] }}
+          transition={
+            entering
+              ? { duration: 0.3 }
+              : { duration: 2.4, repeat: Infinity, ease: "easeInOut" }
+          }
+          className="flex items-center gap-2 font-mono text-xs tracking-wide text-[#5a6472]"
         >
           <MousePointerClick className="h-4 w-4" />
           {isMobile ? "Tap the laptop to enter" : "Click the laptop to enter"}
         </motion.div>
       </motion.div>
-
-      {/* cinematic zoom (unchanged): the screen lifts off the desk, straightens
-          out of its angle and grows to fill the viewport, then hands off to the
-          real Connect page via onEnter. */}
-      {zoom && (
-        <motion.div
-          initial={{
-            top: zoom.top,
-            left: zoom.left,
-            width: zoom.width,
-            height: zoom.height,
-            borderRadius: 4,
-            rotateX: restX,
-            rotateY: restY,
-          }}
-          animate={{
-            top: 0,
-            left: 0,
-            width: window.innerWidth,
-            height: window.innerHeight,
-            borderRadius: 0,
-            rotateX: 0,
-            rotateY: 0,
-          }}
-          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          onAnimationComplete={onEnter}
-          style={{
-            position: "fixed",
-            zIndex: 70,
-            overflow: "hidden",
-            transformPerspective: 1500,
-          }}
-        >
-          <ScreenPreview />
-        </motion.div>
-      )}
     </motion.div>
   );
 }
