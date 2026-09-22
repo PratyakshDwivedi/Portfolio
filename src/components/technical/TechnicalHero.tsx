@@ -16,8 +16,10 @@ export function TechnicalHero() {
       {/* layer 2, vignette for legibility */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_120%_at_50%_50%,transparent_20%,rgba(8,8,10,0.85)_100%)]" />
 
-      {/* layer 3, foreground type */}
-      <div className="relative z-10 text-center">
+      {/* layer 3, foreground type. pointer-events-none so hovering the heading
+          passes the pointer through to the LiquidASCII canvas beneath, letting
+          the fluid ripple appear behind the "Technical" text. */}
+      <div className="pointer-events-none relative z-10 text-center">
         <motion.p
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

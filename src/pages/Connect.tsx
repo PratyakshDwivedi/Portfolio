@@ -1,11 +1,41 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { PageTransition } from "@/components/shared/PageTransition";
 import { ConnectHero } from "@/components/connect/ConnectHero";
+import { LaptopIntro } from "@/components/connect/LaptopIntro";
 import { SocialLinks } from "@/components/connect/SocialLinks";
 import { ResumeCTA } from "@/components/connect/ResumeCTA";
 import { socialLinks } from "@/data/socialLinks";
 
 export default function Connect() {
+  // The page opens as a laptop-on-a-table; the existing Connect content lives
+  // underneath and is revealed once the laptop screen zooms to fill the view.
+  const [entered, setEntered] = useState(false);
+
+  // Lock scroll while the laptop intro is up (prevents peeking / layout jumps).
+  useEffect(() => {
+    if (entered) return;
+    const de = document.documentElement;
+    const prev = de.style.overflow;
+    de.style.overflow = "hidden";
+    return () => {
+      de.style.overflow = prev;
+    };
+  }, [entered]);
+
+  // After entering, smoothly scroll down to the existing contact/social area.
+  useEffect(() => {
+    if (!entered) return;
+    const r1 = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document
+          .getElementById("contact")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+    return () => cancelAnimationFrame(r1);
+  }, [entered]);
+
   return (
     <PageTransition>
       <ConnectHero />
@@ -34,7 +64,7 @@ export default function Connect() {
       </section>
 
       {/* links */}
-      <section className="px-6 pb-16">
+      <section id="contact" className="px-6 pb-16">
         <SocialLinks />
       </section>
 
@@ -54,6 +84,8 @@ export default function Connect() {
           Pratyaksh Dwivedi · Engineer · Leader · Tabla · {new Date().getFullYear()}
         </p>
       </footer>
+
+      <LaptopIntro open={!entered} onEnter={() => setEntered(true)} />
     </PageTransition>
   );
 }

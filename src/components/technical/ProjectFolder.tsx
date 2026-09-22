@@ -180,7 +180,7 @@ export function ProjectFolder({ project, index }: { project: Project; index: num
                 initial={{ opacity: 0, y: 24, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 12, scale: 0.98 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
                 className={cn(
                   "relative w-full max-w-5xl transition-[filter,opacity,transform] duration-300",
                   file && "pointer-events-none scale-[0.98] opacity-40 blur-sm",
@@ -211,16 +211,20 @@ export function ProjectFolder({ project, index }: { project: Project; index: num
                     const anim = {
                       initial: {
                         opacity: 0,
-                        y: reduced ? 0 : 90,
-                        scale: reduced ? 1 : 0.6,
+                        y: reduced ? 0 : 110,
+                        scale: reduced ? 1 : 0.55,
                         rotate: reduced ? 0 : POSE[i] * 3,
                       },
                       animate: { opacity: 1, y: 0, scale: 1, rotate: reduced ? 0 : POSE[i] },
+                      // Gentler spring + a small lead delay and wider stagger, so the
+                      // cards visibly emerge from the folder one after another rather
+                      // than snapping in all at once.
                       transition: {
-                        delay: 0.06 * i,
+                        delay: 0.14 + 0.1 * i,
                         type: "spring" as const,
-                        stiffness: 260,
-                        damping: 22,
+                        stiffness: 160,
+                        damping: 24,
+                        mass: 0.9,
                       },
                     };
                     const inner = cn(
